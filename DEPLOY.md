@@ -168,3 +168,53 @@ the error first — it usually names the problem:
 | "Authentication is not configured" | `JWT_ACCESS_SECRET` missing |
 
 Vercel logs: `npx vercel logs <deployment-url>`
+
+---
+
+# Live deployment
+
+Deployed 2026-09-10.
+
+| | |
+|---|---|
+| **Production** | <https://customer-portal-nine-delta.vercel.app> |
+| Vercel project | `customer-portal` (jbdelasalas-projects) |
+| Repository | <https://github.com/jbdelasalas/Customer-Portal> (public) |
+| Database | Supabase `seteoooczdumqaibrzdl`, ap-southeast-1 |
+
+Pushes to `main` deploy automatically. To deploy by hand:
+`npx vercel --prod`
+
+## Verified in production
+
+Registration, application creation, form save with validation, admin login,
+the staff review queue, and customer→staff isolation returning 403.
+
+## Still to do
+
+**1. File uploads return 503.** Deliberate — Vercel's disk is ephemeral, so
+accepting a document there would lose it silently. To enable:
+
+- Supabase → Storage → **New bucket** named `onboarding-docs`, keep it private
+- Supabase → Settings → API → copy the `service_role` key
+- Then:
+
+```bash
+npx vercel env add UPLOAD_DRIVER production            # supabase
+npx vercel env add SUPABASE_URL production             # https://seteoooczdumqaibrzdl.supabase.co
+npx vercel env add SUPABASE_SERVICE_ROLE_KEY production
+npx vercel env add SUPABASE_STORAGE_BUCKET production  # onboarding-docs
+npx vercel --prod
+```
+
+**2. Email is not wired up.** Verification and password-reset tokens are
+created but never sent, so a customer who forgets their password cannot
+recover it unaided. Needed before real customers sign up.
+
+**3. Rotate the database password.** It was shared during setup and the
+repository is public, so the credential is the only thing protecting the data.
+After rotating in Supabase, update both `POSTGRES_URL` and `DATABASE_URL` in
+Vercel and in `.env.local`.
+
+**4. Delete the deployment token** at <https://vercel.com/account/tokens>.
+It is no longer needed — GitHub pushes deploy on their own.
