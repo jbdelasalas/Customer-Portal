@@ -216,6 +216,31 @@ function Field({
           />
         );
 
+      case 'url':
+        return (
+          <div>
+            <input
+              {...common}
+              type="url"
+              inputMode="url"
+              placeholder={field.placeholder}
+              value={str}
+              onChange={(e) => onChange(field.key, e.target.value)}
+            />
+            {/* Let the applicant confirm the link points where they think. */}
+            {str.startsWith('http') && (
+              <a
+                href={str}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-1 inline-block text-xs text-brand-600 hover:text-brand-700"
+              >
+                Open this link to check it ↗
+              </a>
+            )}
+          </div>
+        );
+
       default:
         return (
           <input

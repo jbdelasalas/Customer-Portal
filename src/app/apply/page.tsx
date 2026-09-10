@@ -381,6 +381,69 @@ export default function ApplyPage() {
         </section>
       ) : null}
 
+      {applicationId && form.schema.notarisedDocument ? (
+        <section className="card mt-8 p-6">
+          <h2 className="text-lg font-semibold text-slate-900">
+            {form.schema.notarisedDocument.label}
+            <span className="ml-2 text-sm font-normal text-slate-400">Optional</span>
+          </h2>
+          <p className="mt-1 text-sm text-slate-500">{form.schema.notarisedDocument.hint}</p>
+
+          <ol className="mt-4 space-y-3 text-sm text-slate-700">
+            <li className="flex gap-3">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-100 text-xs font-semibold text-brand-700">
+                1
+              </span>
+              <div>
+                <p>Print your completed form.</p>
+                <a
+                  href={`/apply/${applicationId}/print`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn-secondary mt-2 inline-flex text-sm"
+                >
+                  Open printable CIS ↗
+                </a>
+                <p className="mt-1 text-xs text-slate-500">
+                  Fill in the details above first — the printout uses what you have entered.
+                </p>
+              </div>
+            </li>
+            <li className="flex gap-3">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-100 text-xs font-semibold text-brand-700">
+                2
+              </span>
+              <p>Sign it before a notary public, who completes the acknowledgment page.</p>
+            </li>
+            <li className="flex gap-3">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-100 text-xs font-semibold text-brand-700">
+                3
+              </span>
+              <div className="w-full">
+                <p>Upload a scan or photo of the notarised copy.</p>
+                <div className="mt-2">
+                  <DocumentUpload
+                    applicationId={applicationId}
+                    documents={[form.schema.notarisedDocument]}
+                    uploadedKeys={uploadedKeys}
+                    bare
+                    disabled={readOnly}
+                    onUploaded={(key) =>
+                      setUploadedKeys((k) => (k.includes(key) ? k : [...k, key]))
+                    }
+                  />
+                </div>
+              </div>
+            </li>
+          </ol>
+
+          <p className="mt-4 rounded-md bg-slate-50 px-3 py-2 text-xs text-slate-600">
+            You can submit without this and send the notarised copy later — but your account
+            cannot be activated until we receive it.
+          </p>
+        </section>
+      ) : null}
+
       {!readOnly && (
         <div className="mt-8 flex items-center justify-end gap-3">
           <button

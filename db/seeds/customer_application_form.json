@@ -1,24 +1,48 @@
 {
   "sections": [
     {
-      "key": "business_info",
-      "title": "Business Information",
-      "description": "Tell us about the business applying for an account.",
+      "key": "consent",
+      "title": "Consent",
+      "description": "What you are agreeing to when you sign this form.",
       "fields": [
         {
+          "key": "consent_note",
+          "type": "section_note",
+          "label": "By signing this form, you give your consent (permission) to Art Fresh Chicken Corp. (AFCC) to collect, use, process, store, and share your personal data and your purchased transaction, credit detail, and/or other information needed to provide the service, and our collection until you request to delete or dispose based on the period where stated in AFCC's retention record policy."
+        },
+        {
+          "key": "consent_given",
+          "label": "I have read and give my consent to the above",
+          "type": "checkbox",
+          "required": true
+        }
+      ]
+    },
+    {
+      "key": "general_info",
+      "title": "General Information",
+      "fields": [
+        {
+          "key": "product_line",
+          "label": "Product",
+          "type": "select",
+          "options": [{ "value": "dressed_chicken", "label": "Dressed Chicken" }]
+        },
+        {
           "key": "legal_name",
-          "label": "Registered business name",
+          "label": "Customer / Business registration name",
           "type": "text",
           "required": true,
           "maxLength": 200,
           "mapsTo": "customers.legal_name"
         },
         {
-          "key": "trade_name",
-          "label": "Trade name / DBA",
+          "key": "owner_name",
+          "label": "Owner / Authorised person",
           "type": "text",
-          "maxLength": 200,
-          "mapsTo": "customers.trade_name"
+          "required": true,
+          "maxLength": 160,
+          "mapsTo": "customers.contact_person"
         },
         {
           "key": "customer_type",
@@ -27,105 +51,67 @@
           "required": true,
           "mapsTo": "customers.customer_type",
           "options": [
-            {
-              "value": "corporate",
-              "label": "Corporation"
-            },
-            {
-              "value": "sole_proprietor",
-              "label": "Sole proprietorship"
-            },
-            {
-              "value": "partnership",
-              "label": "Partnership"
-            },
-            {
-              "value": "cooperative",
-              "label": "Cooperative"
-            },
-            {
-              "value": "government",
-              "label": "Government"
-            },
-            {
-              "value": "individual",
-              "label": "Individual"
-            }
+            { "value": "corporate", "label": "Corporation" },
+            { "value": "sole_proprietor", "label": "Sole proprietorship" },
+            { "value": "partnership", "label": "Partnership" },
+            { "value": "cooperative", "label": "Cooperative" },
+            { "value": "government", "label": "Government" },
+            { "value": "individual", "label": "Individual" }
           ]
-        },
-        {
-          "key": "business_type",
-          "label": "Nature of business",
-          "type": "text",
-          "placeholder": "e.g. Retail trading, Food service",
-          "mapsTo": "customers.business_type"
-        },
-        {
-          "key": "years_in_operation",
-          "label": "Years in operation",
-          "type": "number",
-          "min": 0
-        },
-        {
-          "key": "sec_dti_reg_no",
-          "label": "SEC / DTI registration no.",
-          "type": "text",
-          "maxLength": 60,
-          "mapsTo": "customers.sec_dti_reg_no"
-        },
-        {
-          "key": "business_permit_no",
-          "label": "Mayor's / business permit no.",
-          "type": "text",
-          "maxLength": 60,
-          "mapsTo": "customers.business_permit_no"
         }
       ]
     },
     {
-      "key": "tax_info",
-      "title": "Tax Information",
+      "key": "collection_address",
+      "title": "Collection Address",
       "fields": [
         {
-          "key": "tin",
-          "label": "TIN",
-          "type": "text",
+          "key": "collection_type",
+          "label": "Address type",
+          "type": "radio",
           "required": true,
-          "placeholder": "000-000-000-00000",
-          "maxLength": 20,
-          "mapsTo": "customers.tin"
-        },
-        {
-          "key": "vat_status",
-          "label": "VAT status",
-          "type": "select",
-          "required": true,
-          "mapsTo": "customers.vat_status",
           "options": [
-            {
-              "value": "vat",
-              "label": "VAT registered"
-            },
-            {
-              "value": "non_vat",
-              "label": "Non-VAT"
-            },
-            {
-              "value": "exempt",
-              "label": "VAT exempt"
-            },
-            {
-              "value": "zero_rated",
-              "label": "Zero rated"
-            }
+            { "value": "home", "label": "Home" },
+            { "value": "store", "label": "Store" },
+            { "value": "company", "label": "Company" }
           ]
         },
+        { "key": "collection_house_no", "label": "House no.", "type": "text", "maxLength": 60 },
+        { "key": "collection_street", "label": "Street", "type": "text", "maxLength": 120 },
+        { "key": "collection_subdivision", "label": "Subdivision / Barangay", "type": "text", "maxLength": 120 },
+        { "key": "collection_city", "label": "City / Municipality", "type": "text", "required": true, "maxLength": 120, "mapsTo": "customers.city" },
+        { "key": "collection_province", "label": "Province", "type": "text", "required": true, "maxLength": 120, "mapsTo": "customers.province" },
+        { "key": "collection_postal", "label": "Postal code", "type": "text", "maxLength": 20, "mapsTo": "customers.postal_code" }
+      ]
+    },
+    {
+      "key": "delivery_address",
+      "title": "Delivery Address",
+      "description": "Where your orders should be delivered.",
+      "fields": [
         {
-          "key": "bir_cor_no",
-          "label": "BIR Certificate of Registration no.",
-          "type": "text",
-          "maxLength": 60,
-          "mapsTo": "customers.bir_cor_no"
+          "key": "delivery_same_as_collection",
+          "label": "Same as the collection address above",
+          "type": "checkbox"
+        },
+        { "key": "delivery_house_no", "label": "House no.", "type": "text", "maxLength": 60 },
+        { "key": "delivery_street", "label": "Street", "type": "text", "maxLength": 120 },
+        { "key": "delivery_subdivision", "label": "Subdivision / Barangay", "type": "text", "maxLength": 120 },
+        { "key": "delivery_city", "label": "City / Municipality", "type": "text", "maxLength": 120 },
+        { "key": "delivery_province", "label": "Province", "type": "text", "maxLength": 120 },
+        { "key": "delivery_postal", "label": "Postal code", "type": "text", "maxLength": 20 },
+        {
+          "key": "delivery_map_link",
+          "label": "Google Maps link to the delivery address",
+          "type": "url",
+          "placeholder": "https://maps.app.goo.gl/...",
+          "help": "Optional, but it helps our drivers find you. Open Google Maps, find your location, tap Share, and paste the link here."
+        },
+        {
+          "key": "delivery_notes",
+          "label": "Landmarks or delivery instructions",
+          "type": "textarea",
+          "help": "Optional. Anything that helps our driver reach you."
         }
       ]
     },
@@ -133,279 +119,141 @@
       "key": "contact_info",
       "title": "Contact Details",
       "fields": [
-        {
-          "key": "contact_person",
-          "label": "Primary contact person",
-          "type": "text",
-          "required": true,
-          "maxLength": 160,
-          "mapsTo": "customers.contact_person"
-        },
-        {
-          "key": "contact_position",
-          "label": "Position",
-          "type": "text",
-          "maxLength": 120,
-          "mapsTo": "customers.contact_position"
-        },
-        {
-          "key": "email",
-          "label": "Business email",
-          "type": "email",
-          "required": true,
-          "mapsTo": "customers.email"
-        },
-        {
-          "key": "phone",
-          "label": "Landline",
-          "type": "phone",
-          "mapsTo": "customers.phone"
-        },
-        {
-          "key": "mobile",
-          "label": "Mobile",
-          "type": "phone",
-          "required": true,
-          "mapsTo": "customers.mobile"
-        }
+        { "key": "landline", "label": "Landline", "type": "phone", "mapsTo": "customers.phone" },
+        { "key": "fax", "label": "Fax", "type": "phone" },
+        { "key": "mobile", "label": "Mobile", "type": "phone", "required": true, "mapsTo": "customers.mobile" },
+        { "key": "mobile_alt", "label": "Mobile (alternate)", "type": "phone" },
+        { "key": "email", "label": "Email address", "type": "email", "required": true, "mapsTo": "customers.email" },
+        { "key": "facebook", "label": "Facebook account", "type": "text", "maxLength": 200 },
+        { "key": "viber", "label": "Viber", "type": "phone" },
+        { "key": "other_social", "label": "Other social media account", "type": "text", "maxLength": 200 }
       ]
     },
     {
-      "key": "address_info",
-      "title": "Address",
+      "key": "tax_info",
+      "title": "Tax Information",
       "fields": [
+        { "key": "tin", "label": "TIN ID", "type": "text", "required": true, "placeholder": "000-000-000-00000", "maxLength": 20, "mapsTo": "customers.tin" },
         {
-          "key": "billing_address",
-          "label": "Billing address",
-          "type": "textarea",
-          "required": true,
-          "mapsTo": "customers.billing_address"
-        },
-        {
-          "key": "shipping_address",
-          "label": "Delivery address",
-          "type": "textarea",
-          "help": "Leave blank if the same as billing.",
-          "mapsTo": "customers.shipping_address"
-        },
-        {
-          "key": "city",
-          "label": "City / Municipality",
-          "type": "text",
-          "required": true,
-          "maxLength": 120,
-          "mapsTo": "customers.city"
-        },
-        {
-          "key": "province",
-          "label": "Province",
-          "type": "text",
-          "required": true,
-          "maxLength": 120,
-          "mapsTo": "customers.province"
-        },
-        {
-          "key": "postal_code",
-          "label": "Postal code",
-          "type": "text",
-          "maxLength": 20,
-          "mapsTo": "customers.postal_code"
-        }
-      ]
-    },
-    {
-      "key": "trade_terms",
-      "title": "Requested Trade Terms",
-      "description": "Subject to approval and credit evaluation.",
-      "fields": [
-        {
-          "key": "requested_terms_days",
-          "label": "Requested payment terms",
+          "key": "vat_status",
+          "label": "VAT status",
           "type": "select",
+          "mapsTo": "customers.vat_status",
           "options": [
-            {
-              "value": "0",
-              "label": "Cash on delivery"
-            },
-            {
-              "value": "7",
-              "label": "7 days"
-            },
-            {
-              "value": "15",
-              "label": "15 days"
-            },
-            {
-              "value": "30",
-              "label": "30 days"
-            },
-            {
-              "value": "45",
-              "label": "45 days"
-            },
-            {
-              "value": "60",
-              "label": "60 days"
-            }
+            { "value": "vat", "label": "VAT registered" },
+            { "value": "non_vat", "label": "Non-VAT" },
+            { "value": "exempt", "label": "VAT exempt" },
+            { "value": "zero_rated", "label": "Zero rated" }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "authorised_signatories",
+      "title": "Authorised Signatories",
+      "description": "The people authorised to act for your business. One person may hold more than one role.",
+      "fields": [
+        { "key": "sig_order_name", "label": "To place ORDERS - name", "type": "text", "required": true, "maxLength": 160 },
+        { "key": "sig_order_position", "label": "To place ORDERS - position", "type": "text", "maxLength": 120 },
+        { "key": "sig_receive_name", "label": "To PICK UP / RECEIVE GOODS - name", "type": "text", "required": true, "maxLength": 160 },
+        { "key": "sig_receive_position", "label": "To PICK UP / RECEIVE GOODS - position", "type": "text", "maxLength": 120 },
+        { "key": "sig_payment_name", "label": "For PAYMENT - name", "type": "text", "required": true, "maxLength": 160 },
+        { "key": "sig_payment_position", "label": "For PAYMENT - position", "type": "text", "maxLength": 120 }
+      ]
+    },
+    {
+      "key": "credit_payment",
+      "title": "Credit and Payment Information",
+      "fields": [
+        {
+          "key": "payment_arrangement",
+          "label": "Payment arrangement",
+          "type": "radio",
+          "required": true,
+          "options": [
+            { "value": "cash", "label": "Cash / No credit" },
+            { "value": "credit", "label": "Credit" }
           ]
         },
         {
           "key": "requested_credit_limit",
           "label": "Requested credit limit (PHP)",
           "type": "number",
-          "min": 0
+          "min": 0,
+          "showIf": { "field": "payment_arrangement", "equals": "credit" }
         },
         {
-          "key": "estimated_monthly_volume",
-          "label": "Estimated monthly purchase volume (PHP)",
+          "key": "requested_credit_term_days",
+          "label": "Requested credit term (days)",
           "type": "number",
-          "min": 0
+          "min": 0,
+          "max": 365,
+          "showIf": { "field": "payment_arrangement", "equals": "credit" }
         },
         {
-          "key": "products_of_interest",
-          "label": "Products of interest",
-          "type": "textarea"
-        }
+          "key": "payment_type",
+          "label": "Type of payment",
+          "type": "multiselect",
+          "options": [
+            { "value": "cash", "label": "Cash" },
+            { "value": "cheque", "label": "Cheque" },
+            { "value": "direct_deposit", "label": "Direct deposit" }
+          ]
+        },
+        { "key": "bank_name", "label": "Bank", "type": "text", "maxLength": 160 },
+        { "key": "bank_branch", "label": "Branch", "type": "text", "maxLength": 160 },
+        { "key": "bank_name_2", "label": "Second bank (optional)", "type": "text", "maxLength": 160 },
+        { "key": "bank_branch_2", "label": "Second branch (optional)", "type": "text", "maxLength": 160 }
       ]
     },
     {
-      "key": "trade_references",
-      "title": "Trade References",
-      "description": "Two suppliers you currently buy from on credit.",
+      "key": "credit_agreement",
+      "title": "Agreement on Overdue / Late Payment and Credit Line Transactions",
       "fields": [
         {
-          "key": "ref1_company",
-          "label": "Reference 1 — company",
-          "type": "text",
-          "maxLength": 200
+          "key": "credit_terms_note",
+          "type": "section_note",
+          "label": "Should the CLIENT/CUSTOMER fail to pay on the due date, an additional late payment charge of two (2) percent per month shall be added to the unpaid amount. Further, the SUPPLIER shall have the option to declare all outstanding invoices due and demandable and require their immediate and full settlement. Furthermore, the SUPPLIER shall have the right to immediately collect on any securities, bonds, deposits and the like which the CLIENT/CUSTOMER may have with the SUPPLIER or any financial institution, to the extent of the indebtedness of the CLIENT/CUSTOMER. If the credit limit is exceeded, any and/or all transactions shall be on HOLD until payables are fully settled and/or the credit limit is replenished. Transactions shall likewise be automatically on hold if the CLIENT/CUSTOMER is unable to settle his/her accounts payable within the credit term. NOTE: Art Fresh Chicken Corp. is hereby authorised and allowed by the Client/Customer to conduct inquiry with the banks pertaining to the Client/Customer's bank account (existence of bank deposit)."
         },
         {
-          "key": "ref1_contact",
-          "label": "Reference 1 — contact person",
-          "type": "text",
-          "maxLength": 160
-        },
-        {
-          "key": "ref1_phone",
-          "label": "Reference 1 — phone",
-          "type": "phone"
-        },
-        {
-          "key": "ref2_company",
-          "label": "Reference 2 — company",
-          "type": "text",
-          "maxLength": 200
-        },
-        {
-          "key": "ref2_contact",
-          "label": "Reference 2 — contact person",
-          "type": "text",
-          "maxLength": 160
-        },
-        {
-          "key": "ref2_phone",
-          "label": "Reference 2 — phone",
-          "type": "phone"
+          "key": "credit_terms_agreed",
+          "label": "I have read and agree to the credit and late payment terms above, including the bank inquiry authorisation",
+          "type": "checkbox",
+          "required": true
         }
       ]
     },
     {
       "key": "declaration",
       "title": "Declaration",
+      "description": "Please read, sign, and confirm the details below.",
       "fields": [
         {
           "key": "declaration_note",
           "type": "section_note",
-          "label": "I certify that the information given above is true and correct, and I authorise Art Fresh to verify the details and references provided. I understand that any false statement may result in the refusal or closure of this account."
+          "label": "I declare that the information provided above is true, correct, and complete. I understand that any false or misleading information may be a cause for legal action against me and/or the entity I represent."
         },
-        {
-          "key": "signatory_name",
-          "label": "Name of authorised signatory",
-          "type": "text",
-          "required": true,
-          "maxLength": 160
-        },
-        {
-          "key": "signatory_position",
-          "label": "Position",
-          "type": "text",
-          "required": true,
-          "maxLength": 120
-        },
-        {
-          "key": "signed_date",
-          "label": "Date",
-          "type": "date",
-          "required": true
-        }
-      ],
-      "description": "Please read, sign, and confirm the details below."
+        { "key": "signatory_name", "label": "Name of authorised signatory", "type": "text", "required": true, "maxLength": 160 },
+        { "key": "signatory_position", "label": "Position", "type": "text", "required": true, "maxLength": 120 },
+        { "key": "signed_date", "label": "Date", "type": "date", "required": true }
+      ]
     }
   ],
-  "documents": [
-    {
-      "key": "sec_dti_reg",
-      "label": "SEC / DTI Registration",
-      "required": true,
-      "accept": [
-        "application/pdf",
-        "image/*"
-      ],
-      "maxSizeMb": 10
-    },
-    {
-      "key": "business_permit",
-      "label": "Mayor's / Business Permit",
-      "required": true,
-      "accept": [
-        "application/pdf",
-        "image/*"
-      ],
-      "maxSizeMb": 10
-    },
-    {
-      "key": "bir_cor",
-      "label": "BIR Certificate of Registration",
-      "required": true,
-      "accept": [
-        "application/pdf",
-        "image/*"
-      ],
-      "maxSizeMb": 10
-    },
-    {
-      "key": "valid_id",
-      "label": "Valid ID of signatory",
-      "required": true,
-      "accept": [
-        "application/pdf",
-        "image/*"
-      ],
-      "maxSizeMb": 10
-    },
-    {
-      "key": "financials",
-      "label": "Latest financial statements",
-      "required": false,
-      "accept": [
-        "application/pdf"
-      ],
-      "maxSizeMb": 20
-    }
-  ],
+
   "signature": {
     "key": "applicant",
     "required": true,
-    "label": "Signature of authorised signatory",
-    "declarationText": "I certify that the information given in this application is true and correct, and I authorise Art Fresh to verify the details and references provided. I understand that any false statement may result in the refusal or closure of this account."
+    "label": "Signature of authorised person",
+    "declarationText": "I declare that the information provided above is true, correct, and complete. I understand that any false or misleading information may be a cause for legal action against me and/or the entity I represent."
   },
+
   "photos": [
     {
       "key": "selfie",
-      "label": "Photo of the authorised signatory",
+      "label": "2x2 photo of the customer",
       "facing": "user",
       "required": true,
-      "hint": "A clear photo of your face, taken now. This is matched against the ID you upload."
+      "hint": "A clear photo of your face, taken now. This is the 2x2 customer photo on the Customer Information Sheet."
     },
     {
       "key": "establishment",
@@ -421,5 +269,27 @@
       "required": false,
       "hint": "Optional. The selling area, kitchen, or storage where our products would be kept."
     }
-  ]
+  ],
+
+  "documents": [
+    { "key": "sec_dti_reg", "label": "Certificate of Registration / Articles of Incorporation / DTI registration", "required": true, "accept": ["application/pdf", "image/*"], "maxSizeMb": 10 },
+    { "key": "bir_cor", "label": "Certificate of Registration - BIR", "required": true, "accept": ["application/pdf", "image/*"], "maxSizeMb": 10 },
+    { "key": "business_permit", "label": "Business Permit", "required": true, "accept": ["application/pdf", "image/*"], "maxSizeMb": 10 },
+    { "key": "valid_id", "label": "Valid ID of authorised / cheque signatory", "required": true, "accept": ["application/pdf", "image/*"], "maxSizeMb": 10 },
+    { "key": "specimen_signature", "label": "Specimen Signature Card", "required": false, "accept": ["application/pdf", "image/*"], "maxSizeMb": 10 },
+    { "key": "company_profile", "label": "Company Profile", "required": false, "accept": ["application/pdf"], "maxSizeMb": 20 },
+    { "key": "board_resolution", "label": "Board Resolution", "required": false, "accept": ["application/pdf", "image/*"], "maxSizeMb": 10 },
+    { "key": "secretary_certificate", "label": "Secretary's Certificate", "required": false, "accept": ["application/pdf", "image/*"], "maxSizeMb": 10 },
+    { "key": "general_information_sheet", "label": "Latest General Information Sheet", "required": false, "accept": ["application/pdf"], "maxSizeMb": 20 },
+    { "key": "financials", "label": "Recent audited financial statement", "required": false, "accept": ["application/pdf"], "maxSizeMb": 20 }
+  ],
+
+  "notarisedDocument": {
+    "key": "notarized_cis",
+    "label": "Notarised Customer Information Sheet",
+    "hint": "Print your completed CIS, sign it before a notary public, then upload the notarised copy here.",
+    "accept": ["application/pdf", "image/*"],
+    "maxSizeMb": 20,
+    "required": false
+  }
 }

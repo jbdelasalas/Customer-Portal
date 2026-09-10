@@ -14,6 +14,7 @@ export type FieldType =
   | 'email'
   | 'phone'
   | 'date'
+  | 'url'
   | 'select'
   | 'multiselect'
   | 'radio'
@@ -89,6 +90,12 @@ export interface FormSchema {
   documents?: FormDocument[];
   photos?: FormPhoto[];
   signature?: FormSignature;
+  /**
+   * The printed form, signed before a notary and uploaded back. Kept separate
+   * from `documents` because it is produced FROM this application rather than
+   * gathered beforehand, and the UI pairs it with the print action.
+   */
+  notarisedDocument?: FormDocument & { hint?: string };
 }
 
 export type FormData = Record<string, unknown>;
@@ -101,6 +108,21 @@ export interface ValidationError {
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_RE = /^[0-9+()\-.\s]{7,20}$/;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * Google hands out map links from several hosts depending on how they were
+ * shared — the short maps.app.goo.gl form from the mobile Share sheet, the
+ * older goo.gl/maps, and full google.com/maps URLs on any country domain.
+ * Matching on the host (not a substring of the whole URL) keeps a lookalike
+ * domain from passing.
+ */
+function isMapsUrl(url: URL): boolean {
+  const host = url.hostname.toLowerCase();
+  if (host === 'maps.app.goo.gl' || host === 'goo.gl' || host === 'maps.google.com') return true;
+  // google.com, google.com.ph, google.co.uk … with a /maps path.
+  if (/^(www\.)?google\.[a-z.]{2,6}$/.test(host) && url.pathname.startsWith('/maps')) return true;
+  return false;
+}
 
 export function allFields(schema: FormSchema): FormField[] {
   return schema.sections.flatMap((s) => s.fields);
@@ -170,6 +192,31 @@ export function validateSubmission(
           errors.push({ field: field.key, message: `${field.label} must be a valid date.` });
         }
         break;
+
+      case 'url': {
+        const raw = String(value).trim();
+        let parsed: URL | null = null;
+        try {
+          parsed = new URL(raw);
+        } catch {
+          parsed = null;
+        }
+
+        if (!parsed || !['http:', 'https:'].includes(parsed.protocol)) {
+          errors.push({
+            field: field.key,
+            message: `${field.label} must be a link starting with https://`,
+          });
+        } else if (/map/i.test(field.key) && !isMapsUrl(parsed)) {
+          // A maps field with a non-maps link is almost always a paste error,
+          // and a wrong link sends a driver to the wrong place.
+          errors.push({
+            field: field.key,
+            message: `${field.label} does not look like a Google Maps link. Use the Share option in Google Maps.`,
+          });
+        }
+        break;
+      }
 
       case 'number': {
         const n = Number(value);

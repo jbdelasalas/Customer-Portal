@@ -9,6 +9,8 @@ interface Props {
   uploadedKeys: string[];
   disabled?: boolean;
   onUploaded: (docKey: string) => void;
+  /** Drop the card and heading when embedding this inside another section. */
+  bare?: boolean;
 }
 
 /** One upload slot per document the form schema asks for. */
@@ -18,6 +20,7 @@ export default function DocumentUpload({
   uploadedKeys,
   disabled,
   onUploaded,
+  bare = false,
 }: Props) {
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -50,13 +53,17 @@ export default function DocumentUpload({
   }
 
   return (
-    <section className="card p-6">
-      <h2 className="text-lg font-semibold text-slate-900">Supporting Documents</h2>
-      <p className="mt-1 text-sm text-slate-500">
-        Clear photos or scans are fine, as long as all details are readable.
-      </p>
+    <section className={bare ? '' : 'card p-6'}>
+      {!bare && (
+        <>
+          <h2 className="text-lg font-semibold text-slate-900">Supporting Documents</h2>
+          <p className="mt-1 text-sm text-slate-500">
+            Clear photos or scans are fine, as long as all details are readable.
+          </p>
+        </>
+      )}
 
-      <ul className="mt-5 divide-y divide-slate-100">
+      <ul className={`divide-y divide-slate-100 ${bare ? '' : 'mt-5'}`}>
         {documents.map((doc) => {
           const done = uploadedKeys.includes(doc.key);
           const error = errors[doc.key];
