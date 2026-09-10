@@ -4,6 +4,7 @@ import { ok, err, handler } from '@/lib/api';
 import { queryOne, transaction } from '@/lib/db';
 import { requireStaff } from '@/lib/auth';
 import { mapToCustomer, type FormSchema } from '@/lib/forms';
+import { send, applicationApprovedMail, infoRequestedMail } from '@/lib/mail';
 
 export const dynamic = 'force-dynamic';
 
@@ -122,6 +123,12 @@ export const POST = handler(
           );
         }
       });
+
+      // Emailed after the transaction, so a provider outage cannot roll back
+      // a decision that has already been recorded.
+      if (body.action === 'request_info') {
+        send(infoRequestedMail(app.applicant_email, body.notes, app.id)).catch(() => {});
+      }
 
       return ok({ id: app.id, status: toStatus });
     }
@@ -263,6 +270,10 @@ export const POST = handler(
 
       return { customerId, code: inserted.rows[0].code };
     });
+
+    send(
+      applicationApprovedMail(app.applicant_email, result.code, app.applicant_name ?? undefined),
+    ).catch(() => {});
 
     return ok({
       id: app.id,

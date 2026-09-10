@@ -65,12 +65,20 @@ export const POST = handler(async (request: NextRequest) => {
   const good = await verifyPassword(password, user.password_hash);
   if (!good) {
     const failed = user.failed_logins + 1;
+    // Every parameter is cast explicitly. Without the casts Postgres sees $2
+    // used both as an integer and inside a string concatenation and refuses
+    // with "inconsistent types deduced for parameter $2" — which made this
+    // whole branch throw, so lockout never actually engaged.
     await queryOne(
       `UPDATE users
-          SET failed_logins = $2,
-              locked_until = CASE WHEN $2 >= $3 THEN now() + ($4 || ' minutes')::interval ELSE NULL END
-        WHERE id = $1`,
-      [user.id, failed, MAX_FAILED, String(LOCK_MINUTES)],
+          SET failed_logins = $2::int,
+              locked_until = CASE
+                WHEN $2::int >= $3::int
+                  THEN now() + make_interval(mins => $4::int)
+                ELSE NULL
+              END
+        WHERE id = $1::uuid`,
+      [user.id, failed, MAX_FAILED, LOCK_MINUTES],
     );
     return invalid();
   }

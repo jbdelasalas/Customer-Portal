@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { ok, err, handler } from '@/lib/api';
 import { queryOne, transaction } from '@/lib/db';
 import { hashPassword, newOpaqueToken, signAccess, setAuthCookies } from '@/lib/auth';
+import { send, verifyEmailMail } from '@/lib/mail';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,7 +37,7 @@ export const POST = handler(async (request: NextRequest) => {
 
   const passwordHash = await hashPassword(password);
 
-  const { userId, refreshToken } = await transaction(async (client) => {
+  const { userId, refreshToken, verifyToken } = await transaction(async (client) => {
     const inserted = await client.query<{ id: string }>(
       `INSERT INTO users (email, password_hash, full_name, phone, user_type)
             VALUES ($1, $2, $3, $4, 'customer')
@@ -52,8 +53,6 @@ export const POST = handler(async (request: NextRequest) => {
       [id, hash, request.headers.get('user-agent')?.slice(0, 400) ?? null],
     );
 
-    // Email verification token. Delivery is wired up when SMTP is configured;
-    // the row is created now so the flow is ready.
     const verify = newOpaqueToken();
     await client.query(
       `INSERT INTO auth_tokens (user_id, purpose, token_hash, expires_at)
@@ -61,8 +60,13 @@ export const POST = handler(async (request: NextRequest) => {
       [id, verify.hash],
     );
 
-    return { userId: id, refreshToken: token };
+    return { userId: id, refreshToken: token, verifyToken: verify.token };
   });
+
+  // Sent after the transaction commits, and deliberately not awaited into the
+  // failure path: a provider outage must not undo a completed registration.
+  // The applicant can request a fresh link from their account either way.
+  send(verifyEmailMail(email, verifyToken, fullName)).catch(() => {});
 
   const accessToken = await signAccess({
     sub: userId,
