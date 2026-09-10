@@ -192,20 +192,10 @@ the staff review queue, and customer→staff isolation returning 403.
 
 ## Still to do
 
-**1. File uploads return 503.** Deliberate — Vercel's disk is ephemeral, so
-accepting a document there would lose it silently. To enable:
-
-- Supabase → Storage → **New bucket** named `onboarding-docs`, keep it private
-- Supabase → Settings → API → copy the `service_role` key
-- Then:
-
-```bash
-npx vercel env add UPLOAD_DRIVER production            # supabase
-npx vercel env add SUPABASE_URL production             # https://seteoooczdumqaibrzdl.supabase.co
-npx vercel env add SUPABASE_SERVICE_ROLE_KEY production
-npx vercel env add SUPABASE_STORAGE_BUCKET production  # onboarding-docs
-npx vercel --prod
-```
+**1. File uploads — DONE (2026-09-10).** Supabase Storage is configured:
+private `onboarding-docs` bucket, 20 MB cap, images and PDFs only. Files are
+served through `/api/documents/:docId`, which checks permission and then hands
+back a 5-minute signed URL. Verified in production.
 
 **2. Email is not wired up.** Verification and password-reset tokens are
 created but never sent, so a customer who forgets their password cannot
@@ -216,5 +206,8 @@ repository is public, so the credential is the only thing protecting the data.
 After rotating in Supabase, update both `POSTGRES_URL` and `DATABASE_URL` in
 Vercel and in `.env.local`.
 
-**4. Delete the deployment token** at <https://vercel.com/account/tokens>.
+**4. Rotate the service_role key** at Supabase → Settings → API. It was shared
+during setup, and it bypasses row-level security on the whole project.
+
+**5. Delete the deployment token** at <https://vercel.com/account/tokens>.
 It is no longer needed — GitHub pushes deploy on their own.
