@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Logo from '@/components/Logo';
 
 const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME ?? 'Customer Portal';
 
@@ -6,12 +7,16 @@ export default function HomePage() {
   return (
     <main className="mx-auto flex min-h-screen max-w-5xl flex-col items-center justify-center px-6 py-16">
       <div className="w-full text-center">
+        <div className="mb-8 flex justify-center">
+          <Logo height={56} />
+        </div>
+
         <h1 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
-          {APP_NAME}
+          Customer Portal
         </h1>
         <p className="mx-auto mt-4 max-w-2xl text-lg text-slate-600">
-          Apply for a trade account, place orders at your contracted prices, track every
-          delivery, and view your statement of account.
+          Apply for a trade account with {APP_NAME}, place orders at your contracted
+          prices, track every delivery, and view your statement of account.
         </p>
 
         <div className="mt-8 flex flex-wrap justify-center gap-3">

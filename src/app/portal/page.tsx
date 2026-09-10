@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import SiteHeader from '@/components/SiteHeader';
 
 interface Summary {
   totalOutstanding: number;
@@ -67,6 +68,16 @@ export default function PortalDashboard() {
     : 0;
 
   return (
+    <>
+      <SiteHeader href="/portal">
+        <Link href="/portal/invoices" className="text-sm text-slate-600 hover:text-slate-900">
+          Statement
+        </Link>
+        <Link href="/portal/orders" className="text-sm text-slate-600 hover:text-slate-900">
+          Orders
+        </Link>
+      </SiteHeader>
+
     <main className="mx-auto max-w-5xl px-6 py-10">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
@@ -138,6 +149,7 @@ export default function PortalDashboard() {
         </div>
       </section>
     </main>
+    </>
   );
 }
 

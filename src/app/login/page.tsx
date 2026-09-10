@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Logo from '@/components/Logo';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -44,6 +45,10 @@ export default function LoginPage() {
 
   return (
     <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-6 py-12">
+      <Link href="/" className="mb-8 flex justify-center" aria-label="Home">
+        <Logo height={44} />
+      </Link>
+
       <h1 className="text-2xl font-bold text-slate-900">Sign in</h1>
 
       <form onSubmit={submit} className="card mt-6 space-y-4 p-6">

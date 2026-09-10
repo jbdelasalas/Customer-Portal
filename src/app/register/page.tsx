@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Logo from '@/components/Logo';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -61,6 +62,10 @@ export default function RegisterPage() {
 
   return (
     <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-6 py-12">
+      <Link href="/" className="mb-8 flex justify-center" aria-label="Home">
+        <Logo height={44} />
+      </Link>
+
       <h1 className="text-2xl font-bold text-slate-900">Create your account</h1>
       <p className="mt-2 text-sm text-slate-600">
         You&apos;ll use this to fill in your application and, once approved, to place orders.

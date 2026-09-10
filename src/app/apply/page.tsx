@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import FormRenderer from '@/components/FormRenderer';
+import SiteHeader from '@/components/SiteHeader';
 import DocumentUpload from '@/components/DocumentUpload';
 import type { FormSchema, FormData, ValidationError } from '@/lib/forms';
 
@@ -166,7 +167,9 @@ export default function ApplyPage() {
   const readOnly = !['draft', 'info_requested'].includes(status);
 
   return (
-    <main className="mx-auto max-w-4xl px-6 py-10">
+    <>
+      <SiteHeader href="/" />
+      <main className="mx-auto max-w-4xl px-6 py-10">
       <header className="mb-8">
         <p className="text-sm font-medium text-brand-600">{form.company.name}</p>
         <h1 className="mt-1 text-2xl font-bold text-slate-900">{form.name}</h1>
@@ -228,6 +231,7 @@ export default function ApplyPage() {
           </button>
         </div>
       )}
-    </main>
+      </main>
+    </>
   );
 }

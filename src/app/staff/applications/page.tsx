@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
+import SiteHeader from '@/components/SiteHeader';
 
 interface Row {
   id: string;
@@ -68,6 +69,9 @@ export default function ReviewQueuePage() {
   }, [load]);
 
   return (
+    <>
+      <SiteHeader href="/staff/applications" />
+
     <main className="mx-auto max-w-6xl px-6 py-10">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
@@ -157,5 +161,6 @@ export default function ReviewQueuePage() {
         )}
       </div>
     </main>
+    </>
   );
 }
