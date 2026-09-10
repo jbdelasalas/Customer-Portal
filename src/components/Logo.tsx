@@ -13,8 +13,13 @@ const LOGO_SRC = process.env.NEXT_PUBLIC_LOGO_URL ?? '/logo.png';
 const COMPANY = process.env.NEXT_PUBLIC_APP_NAME ?? 'Artfresh';
 const HAS_LOGO = process.env.NEXT_PUBLIC_HAS_LOGO === 'true';
 
+// The Art Fresh badge is a tall oval (850 x 1190, roughly 5:7), not a wide
+// wordmark. Width is derived from that ratio so the mark keeps its proportions
+// wherever it appears, and callers size it by height alone.
+const LOGO_ASPECT = 850 / 1190;
+
 interface Props {
-  /** Rendered height in px; width scales with the image's aspect ratio. */
+  /** Rendered height in px; width follows the logo's aspect ratio. */
   height?: number;
   /** Show the company name beside the mark. */
   showName?: boolean;
@@ -26,16 +31,18 @@ export default function Logo({ height = 32, showName = false, className = '' }: 
     return <Wordmark height={height} className={className} />;
   }
 
+  const width = Math.round(height * LOGO_ASPECT);
+
   return (
-    <span className={`inline-flex items-center gap-2.5 ${className}`}>
+    <span className={`inline-flex items-center gap-3 ${className}`}>
       <Image
         src={LOGO_SRC}
         alt={COMPANY}
         height={height}
-        width={height * 4}
+        width={width}
         priority
-        className="w-auto object-contain"
-        style={{ height }}
+        className="object-contain"
+        style={{ height, width }}
       />
       {showName && (
         <span className="text-lg font-semibold tracking-tight text-slate-900">{COMPANY}</span>
