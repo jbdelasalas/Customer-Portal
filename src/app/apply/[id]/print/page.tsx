@@ -19,7 +19,13 @@ interface Signature {
   signed_at: string;
 }
 
+interface DocRow {
+  id: string;
+  doc_key: string;
+}
+
 interface Loaded {
+  documents?: DocRow[];
   application: {
     referenceNo: string;
     data: Record<string, unknown>;
@@ -56,6 +62,10 @@ export default function PrintCisPage({ params }: { params: { id: string } }) {
   if (!loaded) return <main className="p-10 text-center text-slate-500">Loading…</main>;
 
   const { application, form } = loaded;
+
+  // The 2x2 photo on the paper form is the selfie captured during signup.
+  const selfieKey = (form.schema.photos ?? []).find((p) => p.facing === 'user')?.key ?? 'selfie';
+  const selfie = (loaded.documents ?? []).find((d) => d.doc_key === selfieKey);
   const d = application.data;
 
   const show = (key: string): string => {
@@ -81,13 +91,21 @@ export default function PrintCisPage({ params }: { params: { id: string } }) {
           .no-print { display: none !important; }
           @page { size: A4; margin: 12mm; }
           body { background: #fff !important; }
+          /* Browsers strip background colours when printing by default, which
+             would flatten the logo and the yellow section bars the paper form
+             uses to separate sections. */
+          * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
         }
       `}</style>
 
       <div className="no-print sticky top-0 z-10 border-b border-slate-200 bg-white px-6 py-3">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-4">
           <p className="text-sm text-slate-600">
-            Print this, sign it before a notary public, then upload the notarised copy.
+            Print this for the customer to sign before a notary, then upload the notarised copy
+            on the review page.
           </p>
           <button type="button" onClick={() => window.print()} className="btn-primary">
             Print
@@ -97,13 +115,45 @@ export default function PrintCisPage({ params }: { params: { id: string } }) {
 
       <main className="mx-auto max-w-3xl bg-white px-8 py-8 text-[11px] leading-snug text-black">
         <header className="border-b-2 border-black pb-3">
-          <h1 className="text-center text-lg font-bold tracking-wide">
-            CUSTOMER INFORMATION SHEET
-          </h1>
-          <p className="mt-1 text-center text-[10px]">
-            {application.companyName.toUpperCase()} — Unit 803 Park Trade Centre, Investment
-            Drive, Madrigal Business Park, Ayala-Alabang, Muntinlupa City
-          </p>
+          <div className="flex items-start gap-4">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/logo.png"
+              alt=""
+              className="h-20 w-auto shrink-0 object-contain"
+            />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-bold tracking-wide">
+                ART FRESH CHICKEN CORP.
+              </p>
+              <p className="mt-0.5 text-[9px] leading-tight">
+                Unit 803 Park Trade Centre, Investment Drive,
+                <br />
+                Madrigal Business Park, Ayala-Alabang, Muntinlupa City
+              </p>
+              <h1 className="mt-2 text-lg font-bold tracking-wide">
+                CUSTOMER INFORMATION SHEET
+              </h1>
+            </div>
+            {/* The 2x2 photo box, as on the paper form. */}
+            <div className="w-24 shrink-0">
+              {selfie ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={`/api/documents/${selfie.id}`}
+                  alt=""
+                  className="h-24 w-24 border border-black object-cover"
+                />
+              ) : (
+                <div className="flex h-24 w-24 items-center justify-center border border-black text-center text-[8px] leading-tight text-slate-500">
+                  CUSTOMER
+                  <br />
+                  2X2 PIC
+                </div>
+              )}
+            </div>
+          </div>
+
           <div className="mt-2 flex justify-between text-[10px]">
             <span>Reference: <strong>{application.referenceNo}</strong></span>
             <span>Date: {show('signed_date') || '____________'}</span>

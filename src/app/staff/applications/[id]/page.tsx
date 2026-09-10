@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import DocumentUpload from '@/components/DocumentUpload';
 import type { FormSchema } from '@/lib/forms';
 
 interface Detail {
@@ -129,7 +130,11 @@ export default function ReviewApplicationPage({ params }: { params: { id: string
   // Photos and documents share a table. The schema says which keys are photos.
   const photoKeys = new Set((form.schema.photos ?? []).map((p) => p.key));
   const photos = documents.filter((d) => photoKeys.has(d.doc_key));
-  const files = documents.filter((d) => !photoKeys.has(d.doc_key));
+  const notarisedKey = form.schema.notarisedDocument?.key;
+  const notarised = notarisedKey ? documents.find((d) => d.doc_key === notarisedKey) : undefined;
+  const files = documents.filter(
+    (d) => !photoKeys.has(d.doc_key) && d.doc_key !== notarisedKey,
+  );
   const decided = ['approved', 'rejected', 'withdrawn'].includes(application.status);
 
   return (
@@ -392,6 +397,58 @@ export default function ReviewApplicationPage({ params }: { params: { id: string
                     Mark as in review
                   </button>
                 )}
+              </div>
+            </section>
+          )}
+
+          {/* Print the CIS for notarisation, and take the signed copy back. */}
+          {form.schema.notarisedDocument && (
+            <section className="card p-6">
+              <h2 className="text-base font-semibold text-slate-900">
+                Notarised CIS
+              </h2>
+              <p className="mt-1 text-xs text-slate-500">
+                Print the completed sheet, have the customer sign it before a notary, then
+                upload the notarised copy here.
+              </p>
+
+              <a
+                href={`/apply/${params.id}/print`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-secondary mt-4 w-full text-sm"
+              >
+                Open printable CIS ↗
+              </a>
+
+              <div className="mt-4">
+                {notarised ? (
+                  <div className="rounded-md border border-green-200 bg-green-50 p-3">
+                    <p className="text-sm font-medium text-green-800">Notarised copy on file</p>
+                    <a
+                      href={`/api/documents/${notarised.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-0.5 block truncate text-xs text-green-700 underline"
+                    >
+                      {notarised.file_name} ↗
+                    </a>
+                  </div>
+                ) : (
+                  <p className="rounded-md bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                    Not yet received.
+                  </p>
+                )}
+
+                <div className="mt-3">
+                  <DocumentUpload
+                    applicationId={params.id}
+                    documents={[form.schema.notarisedDocument]}
+                    uploadedKeys={notarised ? [form.schema.notarisedDocument.key] : []}
+                    onUploaded={() => load()}
+                    bare
+                  />
+                </div>
               </div>
             </section>
           )}
