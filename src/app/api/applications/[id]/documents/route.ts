@@ -46,6 +46,24 @@ export const POST = handler(
     }
     if (!docKey) return err('A docKey is required.', 400);
 
+    // Capture context, sent by PhotoCapture. Absent for a plain file upload.
+    const captureSource = form.get('captureSource') === 'camera' ? 'camera' : 'upload';
+    const capturedAtRaw = String(form.get('capturedAt') ?? '');
+    const capturedAt = capturedAtRaw && !Number.isNaN(Date.parse(capturedAtRaw))
+      ? capturedAtRaw
+      : null;
+
+    // Coordinates are advisory: a browser can be denied location, and any
+    // client value can be forged, so treat them as a hint for the reviewer
+    // rather than proof of where the photo was taken.
+    const asCoord = (v: FormDataEntryValue | null, limit: number) => {
+      const n = Number(v);
+      return v !== null && Number.isFinite(n) && Math.abs(n) <= limit ? n : null;
+    };
+    const latitude = asCoord(form.get('latitude'), 90);
+    const longitude = asCoord(form.get('longitude'), 180);
+    const accuracy = asCoord(form.get('accuracy'), 1_000_000);
+
     // The schema decides what is acceptable — extras are allowed but
     // constrained by the defaults.
     const spec = (app.schema.documents ?? []).find((d) => d.key === docKey);
@@ -70,8 +88,10 @@ export const POST = handler(
       const inserted = await client.query<{ id: string; uploaded_at: string }>(
         `INSERT INTO application_documents
            (application_id, doc_key, file_name, content_type, size_bytes,
-            storage_path, checksum_sha256, uploaded_by)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            storage_path, checksum_sha256, uploaded_by,
+            capture_source, captured_at, latitude, longitude, location_accuracy_m,
+            capture_meta)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
          RETURNING id, uploaded_at`,
         [
           app.id,
@@ -82,18 +102,32 @@ export const POST = handler(
           stored.storagePath,
           stored.checksum,
           auth.userId,
+          captureSource,
+          capturedAt,
+          latitude,
+          longitude,
+          accuracy,
+          JSON.stringify({ userAgent: request.headers.get('user-agent')?.slice(0, 300) ?? null }),
         ],
       );
 
       await client.query(
         `INSERT INTO application_events
            (application_id, event_type, message, is_public, actor_user_id, metadata)
-         VALUES ($1, 'document_uploaded', $2, true, $3, $4)`,
+         VALUES ($1, $2, $3, true, $4, $5)`,
         [
           app.id,
-          `Uploaded ${spec?.label ?? docKey}.`,
+          captureSource === 'camera' ? 'photo_captured' : 'document_uploaded',
+          captureSource === 'camera'
+            ? `Photo taken for ${spec?.label ?? docKey}.`
+            : `Uploaded ${spec?.label ?? docKey}.`,
           auth.userId,
-          JSON.stringify({ docKey, fileName: file.name }),
+          JSON.stringify({
+            docKey,
+            fileName: file.name,
+            captureSource,
+            ...(latitude !== null && longitude !== null ? { latitude, longitude } : {}),
+          }),
         ],
       );
 

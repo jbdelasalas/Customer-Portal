@@ -65,9 +65,30 @@ export interface FormDocument {
   maxSizeMb?: number;
 }
 
+/** A camera-captured photo the form asks for. */
+export interface FormPhoto {
+  key: string;
+  label: string;
+  hint?: string;
+  /** 'user' = selfie (front camera), 'environment' = premises (rear camera). */
+  facing?: 'user' | 'environment';
+  required?: boolean;
+}
+
+/** The signing step shown at the end of the form. */
+export interface FormSignature {
+  key: string;
+  label: string;
+  required?: boolean;
+  /** Stored verbatim with the signature, so we know what was agreed to. */
+  declarationText: string;
+}
+
 export interface FormSchema {
   sections: FormSection[];
   documents?: FormDocument[];
+  photos?: FormPhoto[];
+  signature?: FormSignature;
 }
 
 export type FormData = Record<string, unknown>;
@@ -213,6 +234,12 @@ export function validateSubmission(
 export function missingDocuments(schema: FormSchema, uploadedKeys: string[]): FormDocument[] {
   const have = new Set(uploadedKeys);
   return (schema.documents ?? []).filter((d) => d.required && !have.has(d.key));
+}
+
+/** Required photos not yet captured. Photos share the documents table. */
+export function missingPhotos(schema: FormSchema, capturedKeys: string[]): FormPhoto[] {
+  const have = new Set(capturedKeys);
+  return (schema.photos ?? []).filter((p) => p.required && !have.has(p.key));
 }
 
 /** Columns on `customers` that a form field is allowed to populate. */

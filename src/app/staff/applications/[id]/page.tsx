@@ -19,7 +19,17 @@ interface Detail {
     companyName: string;
   };
   form: { schema: FormSchema; version: number };
-  documents: { id: string; doc_key: string; file_name: string; size_bytes: string; status: string }[];
+  documents: {
+    id: string;
+    doc_key: string;
+    file_name: string;
+    size_bytes: string;
+    status: string;
+    capture_source?: 'camera' | 'upload' | null;
+    captured_at?: string | null;
+    latitude?: string | null;
+    longitude?: string | null;
+  }[];
   events: {
     id: string;
     event_type: string;
@@ -28,6 +38,17 @@ interface Detail {
     actor_label: string | null;
     created_at: string;
   }[];
+}
+
+interface SignatureRow {
+  signature_key: string;
+  signatory_name: string;
+  signatory_position: string | null;
+  signature_data: string;
+  declaration_text: string;
+  signed_at: string;
+  ip_address: string | null;
+  evidence_hash: string;
 }
 
 type Action = 'approve' | 'reject' | 'request_info' | 'start_review';
@@ -39,6 +60,7 @@ export default function ReviewApplicationPage({ params }: { params: { id: string
   const [notes, setNotes] = useState('');
   const [terms, setTerms] = useState({ paymentTermsDays: '', creditLimit: '' });
   const [busy, setBusy] = useState<Action | null>(null);
+  const [signatures, setSignatures] = useState<SignatureRow[]>([]);
 
   const load = useCallback(async () => {
     const res = await fetch(`/api/applications/${params.id}`);
@@ -47,6 +69,11 @@ export default function ReviewApplicationPage({ params }: { params: { id: string
       return;
     }
     setDetail(await res.json());
+
+    // Signatures come from their own endpoint, which returns the audit
+    // context (IP, hash, declaration text) only to staff.
+    const sig = await fetch(`/api/applications/${params.id}/signature`);
+    if (sig.ok) setSignatures((await sig.json()).signatures ?? []);
   }, [params.id]);
 
   useEffect(() => {
@@ -98,6 +125,11 @@ export default function ReviewApplicationPage({ params }: { params: { id: string
   if (!detail) return <main className="p-10 text-center text-slate-500">Loading…</main>;
 
   const { application, form, documents, events } = detail;
+
+  // Photos and documents share a table. The schema says which keys are photos.
+  const photoKeys = new Set((form.schema.photos ?? []).map((p) => p.key));
+  const photos = documents.filter((d) => photoKeys.has(d.doc_key));
+  const files = documents.filter((d) => !photoKeys.has(d.doc_key));
   const decided = ['approved', 'rejected', 'withdrawn'].includes(application.status);
 
   return (
@@ -157,6 +189,75 @@ export default function ReviewApplicationPage({ params }: { params: { id: string
               </dl>
             </section>
           ))}
+
+          {signatures.length > 0 && (
+            <section className="card p-6">
+              <h2 className="text-base font-semibold text-slate-900">Signature</h2>
+              {signatures.map((s) => (
+                <div key={s.signature_key} className="mt-4">
+                  <div className="rounded-md border border-slate-200 bg-white p-4">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={s.signature_data}
+                      alt={`Signature of ${s.signatory_name}`}
+                      className="max-h-32 object-contain"
+                    />
+                  </div>
+                  <p className="mt-2 text-sm font-medium text-slate-800">
+                    {s.signatory_name}
+                    {s.signatory_position ? `, ${s.signatory_position}` : ''}
+                  </p>
+
+                  {/* The audit trail. This is what makes the signature hold up
+                      if the customer later disputes the account. */}
+                  <dl className="mt-3 space-y-1 text-xs text-slate-500">
+                    <div>Signed {new Date(s.signed_at).toLocaleString()}</div>
+                    {s.ip_address && <div>IP {s.ip_address}</div>}
+                    <div className="break-all">Evidence hash {s.evidence_hash?.slice(0, 32)}…</div>
+                  </dl>
+
+                  <details className="mt-3">
+                    <summary className="cursor-pointer text-xs text-brand-600">
+                      Declaration agreed to
+                    </summary>
+                    <p className="mt-2 rounded bg-slate-50 p-3 text-xs leading-relaxed text-slate-600">
+                      {s.declaration_text}
+                    </p>
+                  </details>
+                </div>
+              ))}
+            </section>
+          )}
+
+          {photos.length > 0 && (
+            <section className="card p-6">
+              <h2 className="text-base font-semibold text-slate-900">Photos</h2>
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                {photos.map((p) => (
+                  <div key={p.id}>
+                    <p className="text-sm font-medium text-slate-800">{p.doc_key}</p>
+                    <p className="text-xs text-slate-500">
+                      {p.capture_source === 'camera' ? 'Taken with camera' : 'Uploaded file'}
+                      {p.captured_at ? ` · ${new Date(p.captured_at).toLocaleString()}` : ''}
+                    </p>
+                    {p.latitude && p.longitude && (
+                      <a
+                        href={`https://www.google.com/maps?q=${p.latitude},${p.longitude}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-brand-600 hover:text-brand-700"
+                      >
+                        View location on map
+                      </a>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <p className="mt-3 text-xs text-slate-400">
+                Image previews require file storage to be configured.
+              </p>
+            </section>
+          )}
 
           <section className="card p-6">
             <h2 className="text-base font-semibold text-slate-900">Documents</h2>

@@ -57,7 +57,8 @@ export const GET = handler(
     const app = await loadForActor(params.id, auth);
 
     const documents = await query(
-      `SELECT id, doc_key, file_name, content_type, size_bytes, status, uploaded_at
+      `SELECT id, doc_key, file_name, content_type, size_bytes, status, uploaded_at,
+              capture_source, captured_at, latitude, longitude, location_accuracy_m
          FROM application_documents WHERE application_id = $1
         ORDER BY uploaded_at`,
       [app.id],

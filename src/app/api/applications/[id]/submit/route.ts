@@ -2,7 +2,7 @@ import type { NextRequest } from 'next/server';
 import { ok, err, handler } from '@/lib/api';
 import { query, queryOne, transaction } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
-import { validateSubmission, missingDocuments, type FormSchema } from '@/lib/forms';
+import { validateSubmission, missingDocuments, missingPhotos, type FormSchema } from '@/lib/forms';
 
 export const dynamic = 'force-dynamic';
 
@@ -49,11 +49,36 @@ export const POST = handler(
         WHERE application_id = $1 AND status <> 'rejected'`,
       [app.id],
     );
-    const missing = missingDocuments(app.schema, uploaded.map((d) => d.doc_key));
+    const present = uploaded.map((d) => d.doc_key);
+
+    // Documents and photos share a table, so one query serves both checks.
+    const missing = [
+      ...missingDocuments(app.schema, present).map((d) => ({
+        field: d.key,
+        message: `${d.label} is required.`,
+      })),
+      ...missingPhotos(app.schema, present).map((p) => ({
+        field: p.key,
+        message: `${p.label} is required.`,
+      })),
+    ];
     if (missing.length) {
-      return err('Some required documents are missing.', 422, {
-        details: missing.map((d) => ({ field: d.key, message: `${d.label} is required.` })),
-      });
+      return err('Some required documents or photos are missing.', 422, { details: missing });
+    }
+
+    // The signature is the applicant's assent to the declaration; without it
+    // there is nothing to hold them to.
+    if (app.schema.signature?.required) {
+      const signed = await queryOne<{ id: string }>(
+        `SELECT id FROM application_signatures
+          WHERE application_id = $1 AND signature_key = $2`,
+        [app.id, app.schema.signature.key],
+      );
+      if (!signed) {
+        return err('Please sign the declaration before submitting.', 422, {
+          details: [{ field: 'signature', message: `${app.schema.signature.label} is required.` }],
+        });
+      }
     }
 
     // Denormalise a display name for the review queue from whichever field

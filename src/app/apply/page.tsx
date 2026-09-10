@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import FormRenderer from '@/components/FormRenderer';
 import SiteHeader from '@/components/SiteHeader';
 import DocumentUpload from '@/components/DocumentUpload';
+import PhotoCapture, { type CaptureMeta } from '@/components/PhotoCapture';
+import SignaturePad from '@/components/SignaturePad';
 import type { FormSchema, FormData, ValidationError } from '@/lib/forms';
 
 interface LoadedForm {
@@ -33,6 +35,13 @@ export default function ApplyPage() {
 
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latestData = useRef<FormData>({});
+
+  // Signature state. `signature` is the drawn PNG awaiting confirmation;
+  // `signed` is the server-recorded timestamp once it is stored.
+  const [signature, setSignature] = useState<string | null>(null);
+  const [signed, setSigned] = useState<string | null>(null);
+  const [signing, setSigning] = useState(false);
+  const [signError, setSignError] = useState<string | null>(null);
 
   // --- bootstrap ------------------------------------------------------------
   useEffect(() => {
@@ -70,6 +79,14 @@ export default function ApplyPage() {
             setData(app.application.data ?? {});
             latestData.current = app.application.data ?? {};
             setUploadedKeys((app.documents ?? []).map((d: { doc_key: string }) => d.doc_key));
+
+            // Show the declaration as already signed when resuming a draft,
+            // rather than presenting an empty pad over a signature we hold.
+            const sigRes = await fetch(`/api/applications/${existingId}/signature`);
+            if (sigRes.ok) {
+              const { signatures } = await sigRes.json();
+              if (signatures?.length) setSigned(signatures[0].signed_at);
+            }
 
             if (['submitted', 'under_review', 'approved', 'rejected'].includes(app.application.status)) {
               router.push(`/apply/${app.application.id}`);
@@ -127,6 +144,77 @@ export default function ApplyPage() {
 
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => persist(latestData.current), 1200);
+  }
+
+  /** Sends a captured photo with its context to the documents endpoint. */
+  async function uploadPhoto(key: string, file: File, meta: CaptureMeta) {
+    if (!applicationId) return;
+
+    const body = new FormData();
+    body.append('file', file);
+    body.append('docKey', key);
+    body.append('captureSource', meta.source);
+    body.append('capturedAt', meta.capturedAt);
+    if (meta.latitude !== undefined) body.append('latitude', String(meta.latitude));
+    if (meta.longitude !== undefined) body.append('longitude', String(meta.longitude));
+    if (meta.accuracy !== undefined) body.append('accuracy', String(meta.accuracy));
+
+    const res = await fetch(`/api/applications/${applicationId}/documents`, {
+      method: 'POST',
+      body,
+    });
+    if (!res.ok) {
+      const b = await res.json().catch(() => ({}));
+      throw new Error(b.error ?? 'Upload failed.');
+    }
+    setUploadedKeys((k) => (k.includes(key) ? k : [...k, key]));
+  }
+
+  async function saveSignature() {
+    if (!applicationId || !signature || !form?.schema.signature) return;
+
+    const name = String(latestData.current.signatory_name ?? '').trim();
+    const position = String(latestData.current.signatory_position ?? '').trim();
+
+    // The signature is meaningless without knowing who signed, and these live
+    // in the declaration section directly above the pad.
+    if (name.length < 2) {
+      setSignError('Please enter the name of the authorised signatory above before signing.');
+      return;
+    }
+
+    setSigning(true);
+    setSignError(null);
+    try {
+      // Flush the form first, so the stored name matches what was on screen.
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+      await persist(latestData.current);
+
+      const res = await fetch(`/api/applications/${applicationId}/signature`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          signatureKey: form.schema.signature.key,
+          signatureData: signature,
+          signatoryName: name,
+          signatoryPosition: position || undefined,
+          declarationText: form.schema.signature.declarationText,
+          method: 'drawn',
+        }),
+      });
+      const body = await res.json();
+
+      if (!res.ok) {
+        setSignError(body.error ?? 'Could not record the signature.');
+        return;
+      }
+      setSigned(body.signedAt);
+      setSignature(null);
+    } catch {
+      setSignError('Could not reach the server. Please try again.');
+    } finally {
+      setSigning(false);
+    }
   }
 
   async function submit() {
@@ -204,6 +292,32 @@ export default function ApplyPage() {
         onChange={onChange}
       />
 
+      {applicationId && form.schema.photos?.length ? (
+        <section className="card mt-8 p-6">
+          <h2 className="text-lg font-semibold text-slate-900">Photos</h2>
+          <p className="mt-1 text-sm text-slate-500">
+            Taken with your camera so we can verify your business. If your camera
+            isn&rsquo;t available, you can upload a photo instead.
+          </p>
+
+          <div className="mt-5 space-y-4">
+            {form.schema.photos.map((photo) => (
+              <PhotoCapture
+                key={photo.key}
+                label={photo.label + (photo.required ? ' *' : '')}
+                hint={photo.hint}
+                facing={photo.facing ?? 'environment'}
+                disabled={readOnly}
+                existing={
+                  uploadedKeys.includes(photo.key) ? { fileName: 'Photo on file' } : null
+                }
+                onCapture={(file, meta) => uploadPhoto(photo.key, file, meta)}
+              />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
       {applicationId && form.schema.documents?.length ? (
         <div className="mt-8">
           <DocumentUpload
@@ -214,6 +328,57 @@ export default function ApplyPage() {
             onUploaded={(key) => setUploadedKeys((k) => (k.includes(key) ? k : [...k, key]))}
           />
         </div>
+      ) : null}
+
+      {applicationId && form.schema.signature ? (
+        <section className="card mt-8 p-6">
+          <h2 className="text-lg font-semibold text-slate-900">
+            {form.schema.signature.label}
+            {form.schema.signature.required && <span className="ml-0.5 text-red-500">*</span>}
+          </h2>
+
+          <p className="mt-3 rounded-md bg-slate-50 p-4 text-sm leading-relaxed text-slate-700">
+            {form.schema.signature.declarationText}
+          </p>
+
+          {signed ? (
+            <div className="mt-4 rounded-md border border-green-200 bg-green-50 p-4">
+              <p className="text-sm font-medium text-green-800">
+                Signed by {String(data.signatory_name ?? '')}
+              </p>
+              <p className="mt-1 text-xs text-green-700">
+                Recorded {new Date(signed).toLocaleString()}.
+              </p>
+              {!readOnly && (
+                <button
+                  type="button"
+                  className="mt-2 text-xs text-brand-600 hover:text-brand-700"
+                  onClick={() => setSigned(null)}
+                >
+                  Sign again
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="mt-4">
+              <SignaturePad onChange={setSignature} disabled={readOnly} />
+
+              {signError && <p className="mt-2 text-sm text-red-600">{signError}</p>}
+
+              <button
+                type="button"
+                className="btn-primary mt-3"
+                disabled={readOnly || !signature || signing}
+                onClick={saveSignature}
+              >
+                {signing ? 'Recording…' : 'Confirm signature'}
+              </button>
+              <p className="mt-2 text-xs text-slate-500">
+                Enter your name and position above before signing.
+              </p>
+            </div>
+          )}
+        </section>
       ) : null}
 
       {!readOnly && (
