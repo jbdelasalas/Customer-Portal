@@ -63,7 +63,7 @@ export default function RegisterPage() {
   return (
     <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-6 py-12">
       <Link href="/" className="mb-8 flex justify-center" aria-label="Home">
-        <Logo height={44} />
+        <Logo height={112} />
       </Link>
 
       <h1 className="text-2xl font-bold text-slate-900">Create your account</h1>

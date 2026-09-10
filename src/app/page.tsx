@@ -8,7 +8,7 @@ export default function HomePage() {
     <main className="mx-auto flex min-h-screen max-w-5xl flex-col items-center justify-center px-6 py-16">
       <div className="w-full text-center">
         <div className="mb-8 flex justify-center">
-          <Logo height={56} />
+          <Logo height={160} />
         </div>
 
         <h1 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">

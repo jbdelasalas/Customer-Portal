@@ -38,8 +38,11 @@ export default function Logo({ height = 32, showName = false, className = '' }: 
       <Image
         src={LOGO_SRC}
         alt={COMPANY}
-        height={height}
-        width={width}
+        // Request double the rendered size so the badge stays crisp on
+        // retina displays, where 1 CSS px is 2 device px.
+        height={height * 2}
+        width={width * 2}
+        quality={90}
         priority
         className="object-contain"
         style={{ height, width }}
