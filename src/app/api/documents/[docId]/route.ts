@@ -51,7 +51,12 @@ export const GET = handler(
     // unexpected credentials — and the image silently fails to load in an
     // <img> tag. The signed URL carries its own authorisation in the query
     // string and needs nothing else.
-    const signed = await signedUrlFor(doc.storage_path, 300);
+    // An hour, not five minutes. The link is only handed to someone who has
+    // already passed the permission check above, and a short window breaks
+    // ordinary use: a review page left open, a slow connection, or scrolling
+    // back to a photo all outlive five minutes. It also leaves room for clock
+    // skew between us and the storage host.
+    const signed = await signedUrlFor(doc.storage_path, 3600);
     if (signed) {
       return new Response(null, {
         status: 302,
