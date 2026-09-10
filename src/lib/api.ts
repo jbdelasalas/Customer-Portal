@@ -34,6 +34,9 @@ function configProblem(e: unknown): string | null {
   if (/relation ".+" does not exist/i.test(e.message)) {
     return 'The database schema is missing. Run `npm run db:migrate`.';
   }
+  if (/File storage is not configured|Supabase storage is not configured/i.test(e.message)) {
+    return 'File uploads are not configured on this deployment. Set UPLOAD_DRIVER and the Supabase storage keys.';
+  }
   return null;
 }
 

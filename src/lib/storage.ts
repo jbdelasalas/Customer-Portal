@@ -26,6 +26,16 @@ export async function storeFile(
 
   const driver = process.env.UPLOAD_DRIVER ?? 'local';
 
+  // Serverless filesystems are ephemeral: a local write succeeds, returns 201,
+  // and is gone by the next request — losing documents someone needs and
+  // reporting success while doing it. Refuse rather than accept-and-lose.
+  if (driver === 'local' && isServerless()) {
+    throw new Error(
+      'File storage is not configured for this environment. ' +
+        'Set UPLOAD_DRIVER=supabase with SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.',
+    );
+  }
+
   if (driver === 'supabase') {
     const url = process.env.SUPABASE_URL;
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -52,6 +62,13 @@ export async function storeFile(
   const full = join(process.cwd(), 'uploads', objectName);
   await writeFile(full, buffer);
   return { storagePath: `uploads/${objectName}`, checksum, size: buffer.length };
+}
+
+/** True on Vercel/AWS Lambda and similar, where only /tmp is writable. */
+function isServerless(): boolean {
+  return Boolean(
+    process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.NETLIFY,
+  );
 }
 
 function extensionFor(name: string, mime: string): string {
