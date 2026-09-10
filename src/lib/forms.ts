@@ -1,0 +1,245 @@
+/**
+ * The form engine.
+ *
+ * A form is a JSON schema stored in form_versions.schema. This module is the
+ * only place that understands that shape: it types it, validates a submission
+ * against it, and maps approved answers onto customer columns. Adding a field
+ * to a form is a data change, not a code change.
+ */
+
+export type FieldType =
+  | 'text'
+  | 'textarea'
+  | 'number'
+  | 'email'
+  | 'phone'
+  | 'date'
+  | 'select'
+  | 'multiselect'
+  | 'radio'
+  | 'checkbox'
+  | 'file'
+  | 'section_note';
+
+export interface FieldOption {
+  value: string;
+  label: string;
+}
+
+/** Shows the field only when another field holds a given value. */
+export interface ShowIf {
+  field: string;
+  equals?: string | number | boolean;
+  in?: (string | number)[];
+}
+
+export interface FormField {
+  key: string;
+  label: string;
+  type: FieldType;
+  required?: boolean;
+  placeholder?: string;
+  help?: string;
+  maxLength?: number;
+  min?: number;
+  max?: number;
+  pattern?: string;
+  options?: FieldOption[];
+  showIf?: ShowIf;
+  /** "customers.legal_name" — copied onto the customer row on approval. */
+  mapsTo?: string;
+}
+
+export interface FormSection {
+  key: string;
+  title: string;
+  description?: string;
+  fields: FormField[];
+}
+
+export interface FormDocument {
+  key: string;
+  label: string;
+  required?: boolean;
+  accept?: string[];
+  maxSizeMb?: number;
+}
+
+export interface FormSchema {
+  sections: FormSection[];
+  documents?: FormDocument[];
+}
+
+export type FormData = Record<string, unknown>;
+
+export interface ValidationError {
+  field: string;
+  message: string;
+}
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PHONE_RE = /^[0-9+()\-.\s]{7,20}$/;
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+export function allFields(schema: FormSchema): FormField[] {
+  return schema.sections.flatMap((s) => s.fields);
+}
+
+/** A field hidden by its showIf condition is neither required nor validated. */
+export function isVisible(field: FormField, data: FormData): boolean {
+  const cond = field.showIf;
+  if (!cond) return true;
+
+  const actual = data[cond.field];
+  if (cond.in) return cond.in.some((v) => String(v) === String(actual));
+  if (cond.equals !== undefined) return String(cond.equals) === String(actual);
+  return actual !== undefined && actual !== null && actual !== '';
+}
+
+function isBlank(value: unknown): boolean {
+  if (value === undefined || value === null) return true;
+  if (typeof value === 'string') return value.trim() === '';
+  if (Array.isArray(value)) return value.length === 0;
+  return false;
+}
+
+/**
+ * Validates `data` against `schema`.
+ *
+ * `partial` is for draft saves: required-ness is skipped, but anything the
+ * applicant did fill in is still checked, so a draft can't hold garbage that
+ * only explodes at submit time.
+ */
+export function validateSubmission(
+  schema: FormSchema,
+  data: FormData,
+  opts: { partial?: boolean } = {},
+): ValidationError[] {
+  const errors: ValidationError[] = [];
+  const partial = opts.partial ?? false;
+
+  for (const field of allFields(schema)) {
+    if (field.type === 'section_note') continue;
+    if (!isVisible(field, data)) continue;
+
+    const value = data[field.key];
+
+    if (isBlank(value)) {
+      if (field.required && !partial) {
+        errors.push({ field: field.key, message: `${field.label} is required.` });
+      }
+      continue;
+    }
+
+    switch (field.type) {
+      case 'email':
+        if (!EMAIL_RE.test(String(value))) {
+          errors.push({ field: field.key, message: `${field.label} must be a valid email address.` });
+        }
+        break;
+
+      case 'phone':
+        if (!PHONE_RE.test(String(value))) {
+          errors.push({ field: field.key, message: `${field.label} must be a valid phone number.` });
+        }
+        break;
+
+      case 'date':
+        if (!DATE_RE.test(String(value)) || Number.isNaN(Date.parse(String(value)))) {
+          errors.push({ field: field.key, message: `${field.label} must be a valid date.` });
+        }
+        break;
+
+      case 'number': {
+        const n = Number(value);
+        if (Number.isNaN(n)) {
+          errors.push({ field: field.key, message: `${field.label} must be a number.` });
+        } else {
+          if (field.min !== undefined && n < field.min) {
+            errors.push({ field: field.key, message: `${field.label} must be at least ${field.min}.` });
+          }
+          if (field.max !== undefined && n > field.max) {
+            errors.push({ field: field.key, message: `${field.label} must be at most ${field.max}.` });
+          }
+        }
+        break;
+      }
+
+      case 'checkbox':
+        if (field.required && value !== true && value !== 'true') {
+          errors.push({ field: field.key, message: `${field.label} must be ticked.` });
+        }
+        break;
+
+      case 'select':
+      case 'radio':
+        if (field.options?.length && !field.options.some((o) => o.value === String(value))) {
+          errors.push({ field: field.key, message: `${field.label} has an invalid selection.` });
+        }
+        break;
+
+      case 'multiselect': {
+        const values = Array.isArray(value) ? value : [value];
+        if (field.options?.length) {
+          const allowed = new Set(field.options.map((o) => o.value));
+          if (values.some((v) => !allowed.has(String(v)))) {
+            errors.push({ field: field.key, message: `${field.label} has an invalid selection.` });
+          }
+        }
+        break;
+      }
+
+      default:
+        break;
+    }
+
+    if (typeof value === 'string') {
+      if (field.maxLength && value.length > field.maxLength) {
+        errors.push({
+          field: field.key,
+          message: `${field.label} must be ${field.maxLength} characters or fewer.`,
+        });
+      }
+      if (field.pattern && !new RegExp(field.pattern).test(value)) {
+        errors.push({ field: field.key, message: `${field.label} is not in the expected format.` });
+      }
+    }
+  }
+
+  return errors;
+}
+
+/** Documents the schema marks required that the application has not supplied. */
+export function missingDocuments(schema: FormSchema, uploadedKeys: string[]): FormDocument[] {
+  const have = new Set(uploadedKeys);
+  return (schema.documents ?? []).filter((d) => d.required && !have.has(d.key));
+}
+
+/** Columns on `customers` that a form field is allowed to populate. */
+const CUSTOMER_COLUMNS = new Set([
+  'name', 'legal_name', 'trade_name', 'customer_type', 'business_type',
+  'tin', 'vat_status', 'business_permit_no', 'sec_dti_reg_no', 'bir_cor_no',
+  'contact_person', 'contact_position', 'email', 'phone', 'mobile',
+  'billing_address', 'shipping_address', 'city', 'province', 'postal_code', 'country',
+]);
+
+/**
+ * Turns submitted answers into a `customers` column patch, following each
+ * field's `mapsTo`. Anything not on the allow-list above is ignored, so a
+ * hand-edited form schema can never write to credit_limit or status.
+ */
+export function mapToCustomer(schema: FormSchema, data: FormData): Record<string, unknown> {
+  const patch: Record<string, unknown> = {};
+
+  for (const field of allFields(schema)) {
+    if (!field.mapsTo) continue;
+    const [table, column] = field.mapsTo.split('.');
+    if (table !== 'customers' || !CUSTOMER_COLUMNS.has(column)) continue;
+
+    const value = data[field.key];
+    if (isBlank(value)) continue;
+    patch[column] = typeof value === 'string' ? value.trim() : value;
+  }
+
+  return patch;
+}

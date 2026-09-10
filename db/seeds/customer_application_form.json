@@ -1,0 +1,117 @@
+{
+  "sections": [
+    {
+      "key": "business_info",
+      "title": "Business Information",
+      "description": "Tell us about the business applying for an account.",
+      "fields": [
+        { "key": "legal_name", "label": "Registered business name", "type": "text", "required": true, "maxLength": 200, "mapsTo": "customers.legal_name" },
+        { "key": "trade_name", "label": "Trade name / DBA", "type": "text", "maxLength": 200, "mapsTo": "customers.trade_name" },
+        { "key": "customer_type", "label": "Business structure", "type": "select", "required": true, "mapsTo": "customers.customer_type",
+          "options": [
+            { "value": "corporate", "label": "Corporation" },
+            { "value": "sole_proprietor", "label": "Sole proprietorship" },
+            { "value": "partnership", "label": "Partnership" },
+            { "value": "cooperative", "label": "Cooperative" },
+            { "value": "government", "label": "Government" },
+            { "value": "individual", "label": "Individual" }
+          ]
+        },
+        { "key": "business_type", "label": "Nature of business", "type": "text", "placeholder": "e.g. Retail trading, Food service", "mapsTo": "customers.business_type" },
+        { "key": "years_in_operation", "label": "Years in operation", "type": "number", "min": 0 },
+        { "key": "sec_dti_reg_no", "label": "SEC / DTI registration no.", "type": "text", "maxLength": 60, "mapsTo": "customers.sec_dti_reg_no" },
+        { "key": "business_permit_no", "label": "Mayor's / business permit no.", "type": "text", "maxLength": 60, "mapsTo": "customers.business_permit_no" }
+      ]
+    },
+    {
+      "key": "tax_info",
+      "title": "Tax Information",
+      "fields": [
+        { "key": "tin", "label": "TIN", "type": "text", "required": true, "placeholder": "000-000-000-00000", "maxLength": 20, "mapsTo": "customers.tin" },
+        { "key": "vat_status", "label": "VAT status", "type": "select", "required": true, "mapsTo": "customers.vat_status",
+          "options": [
+            { "value": "vat", "label": "VAT registered" },
+            { "value": "non_vat", "label": "Non-VAT" },
+            { "value": "exempt", "label": "VAT exempt" },
+            { "value": "zero_rated", "label": "Zero rated" }
+          ]
+        },
+        { "key": "bir_cor_no", "label": "BIR Certificate of Registration no.", "type": "text", "maxLength": 60, "mapsTo": "customers.bir_cor_no" }
+      ]
+    },
+    {
+      "key": "contact_info",
+      "title": "Contact Details",
+      "fields": [
+        { "key": "contact_person", "label": "Primary contact person", "type": "text", "required": true, "maxLength": 160, "mapsTo": "customers.contact_person" },
+        { "key": "contact_position", "label": "Position", "type": "text", "maxLength": 120, "mapsTo": "customers.contact_position" },
+        { "key": "email", "label": "Business email", "type": "email", "required": true, "mapsTo": "customers.email" },
+        { "key": "phone", "label": "Landline", "type": "phone", "mapsTo": "customers.phone" },
+        { "key": "mobile", "label": "Mobile", "type": "phone", "required": true, "mapsTo": "customers.mobile" }
+      ]
+    },
+    {
+      "key": "address_info",
+      "title": "Address",
+      "fields": [
+        { "key": "billing_address", "label": "Billing address", "type": "textarea", "required": true, "mapsTo": "customers.billing_address" },
+        { "key": "shipping_address", "label": "Delivery address", "type": "textarea", "help": "Leave blank if the same as billing.", "mapsTo": "customers.shipping_address" },
+        { "key": "city", "label": "City / Municipality", "type": "text", "required": true, "maxLength": 120, "mapsTo": "customers.city" },
+        { "key": "province", "label": "Province", "type": "text", "required": true, "maxLength": 120, "mapsTo": "customers.province" },
+        { "key": "postal_code", "label": "Postal code", "type": "text", "maxLength": 20, "mapsTo": "customers.postal_code" }
+      ]
+    },
+    {
+      "key": "trade_terms",
+      "title": "Requested Trade Terms",
+      "description": "Subject to approval and credit evaluation.",
+      "fields": [
+        { "key": "requested_terms_days", "label": "Requested payment terms", "type": "select",
+          "options": [
+            { "value": "0",  "label": "Cash on delivery" },
+            { "value": "7",  "label": "7 days" },
+            { "value": "15", "label": "15 days" },
+            { "value": "30", "label": "30 days" },
+            { "value": "45", "label": "45 days" },
+            { "value": "60", "label": "60 days" }
+          ]
+        },
+        { "key": "requested_credit_limit", "label": "Requested credit limit (PHP)", "type": "number", "min": 0 },
+        { "key": "estimated_monthly_volume", "label": "Estimated monthly purchase volume (PHP)", "type": "number", "min": 0 },
+        { "key": "products_of_interest", "label": "Products of interest", "type": "textarea" }
+      ]
+    },
+    {
+      "key": "trade_references",
+      "title": "Trade References",
+      "description": "Two suppliers you currently buy from on credit.",
+      "fields": [
+        { "key": "ref1_company", "label": "Reference 1 — company", "type": "text", "maxLength": 200 },
+        { "key": "ref1_contact", "label": "Reference 1 — contact person", "type": "text", "maxLength": 160 },
+        { "key": "ref1_phone",   "label": "Reference 1 — phone", "type": "phone" },
+        { "key": "ref2_company", "label": "Reference 2 — company", "type": "text", "maxLength": 200 },
+        { "key": "ref2_contact", "label": "Reference 2 — contact person", "type": "text", "maxLength": 160 },
+        { "key": "ref2_phone",   "label": "Reference 2 — phone", "type": "phone" }
+      ]
+    },
+    {
+      "key": "declaration",
+      "title": "Declaration",
+      "fields": [
+        { "key": "declaration_note", "type": "section_note",
+          "label": "I certify that the information given above is true and correct, and I authorise verification of the details and references provided." },
+        { "key": "agreed", "label": "I certify and agree to the above", "type": "checkbox", "required": true },
+        { "key": "signatory_name", "label": "Name of authorised signatory", "type": "text", "required": true, "maxLength": 160 },
+        { "key": "signatory_position", "label": "Position", "type": "text", "required": true, "maxLength": 120 },
+        { "key": "signed_date", "label": "Date", "type": "date", "required": true }
+      ]
+    }
+  ],
+  "documents": [
+    { "key": "sec_dti_reg",     "label": "SEC / DTI Registration",         "required": true,  "accept": ["application/pdf", "image/*"], "maxSizeMb": 10 },
+    { "key": "business_permit", "label": "Mayor's / Business Permit",      "required": true,  "accept": ["application/pdf", "image/*"], "maxSizeMb": 10 },
+    { "key": "bir_cor",         "label": "BIR Certificate of Registration","required": true,  "accept": ["application/pdf", "image/*"], "maxSizeMb": 10 },
+    { "key": "valid_id",        "label": "Valid ID of signatory",          "required": true,  "accept": ["application/pdf", "image/*"], "maxSizeMb": 10 },
+    { "key": "financials",      "label": "Latest financial statements",    "required": false, "accept": ["application/pdf"],            "maxSizeMb": 20 }
+  ]
+}
