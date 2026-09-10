@@ -1,8 +1,6 @@
 import Link from 'next/link';
 import Logo from '@/components/Logo';
 
-const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME ?? 'Customer Portal';
-
 export default function HomePage() {
   return (
     <main className="mx-auto flex min-h-screen max-w-5xl flex-col items-center justify-center px-6 py-16">
@@ -12,11 +10,16 @@ export default function HomePage() {
         </div>
 
         <h1 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
-          Customer Portal
+          From Our Farm to Your Business
         </h1>
-        <p className="mx-auto mt-4 max-w-2xl text-lg text-slate-600">
-          Apply for a trade account with {APP_NAME}, place orders at your contracted
-          prices, track every delivery, and view your statement of account.
+        <p className="mt-3 text-xl font-medium text-brand-600 sm:text-2xl">
+          Apply for a Trade Account Today.
+        </p>
+        <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-slate-600">
+          Whether you&rsquo;re a restaurant, retailer, distributor, or food business,
+          we&rsquo;re here to support your growing needs with quality dressed chicken and
+          dependable supply. Apply for a Trade Account and experience easier, faster,
+          and more convenient ordering.
         </p>
 
         <div className="mt-8 flex flex-wrap justify-center gap-3">
