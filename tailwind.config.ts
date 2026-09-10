@@ -1,4 +1,5 @@
 import type { Config } from 'tailwindcss';
+import defaultTheme from 'tailwindcss/defaultTheme';
 
 // Brand colours sampled from the Art Fresh badge itself: red #f01010 and
 // yellow #f0e000. The scales are built around those two so buttons, links and
@@ -7,6 +8,11 @@ const config: Config = {
   content: ['./src/**/*.{ts,tsx}'],
   theme: {
     extend: {
+      fontFamily: {
+        // Outfit, matching the ERP. The CSS variable is set by next/font in
+        // layout.tsx; the system stack behind it covers the load window.
+        sans: ['var(--font-outfit)', ...defaultTheme.fontFamily.sans],
+      },
       colors: {
         brand: {
           50:  '#fef2f2', 100: '#fee2e2', 200: '#fecaca', 300: '#fca5a5',
