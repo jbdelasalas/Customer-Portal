@@ -23,6 +23,9 @@ export default function SignaturePad({ onChange, disabled, height = 180 }: Props
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawing = useRef(false);
   const last = useRef<{ x: number; y: number } | null>(null);
+  // Mirrors hasInk in a ref. State updates are async and re-render the
+  // component; resizing must not consult a value that lags behind the canvas.
+  const inked = useRef(false);
   const [hasInk, setHasInk] = useState(false);
 
   // Size the backing store to the CSS box times the pixel ratio.
@@ -30,12 +33,15 @@ export default function SignaturePad({ onChange, disabled, height = 180 }: Props
     const canvas = canvasRef.current;
     if (!canvas) return;
 
+    // Resizing clears the canvas, so never do it mid-stroke.
+    if (drawing.current) return;
+
     const ratio = window.devicePixelRatio || 1;
     const rect = canvas.getBoundingClientRect();
     if (rect.width === 0) return;
 
     // Preserve any existing ink across a resize.
-    const previous = hasInk ? canvas.toDataURL() : null;
+    const previous = inked.current ? canvas.toDataURL() : null;
 
     canvas.width = Math.round(rect.width * ratio);
     canvas.height = Math.round(height * ratio);
@@ -53,7 +59,7 @@ export default function SignaturePad({ onChange, disabled, height = 180 }: Props
       img.onload = () => ctx.drawImage(img, 0, 0, rect.width, height);
       img.src = previous;
     }
-  }, [height, hasInk]);
+  }, [height]);
 
   useEffect(() => {
     fitCanvas();
@@ -73,7 +79,21 @@ export default function SignaturePad({ onChange, disabled, height = 180 }: Props
     if (disabled) return;
     e.currentTarget.setPointerCapture(e.pointerId);
     drawing.current = true;
-    last.current = pointFrom(e);
+
+    const p = pointFrom(e);
+    last.current = p;
+
+    // Mark the starting point immediately. Without this a tap that never
+    // moves — dotting an i, a full stop — leaves no ink at all.
+    const ctx = canvasRef.current?.getContext('2d');
+    if (ctx) {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, ctx.lineWidth / 2, 0, Math.PI * 2);
+      ctx.fillStyle = ctx.strokeStyle;
+      ctx.fill();
+    }
+    inked.current = true;
+    if (!hasInk) setHasInk(true);
   }
 
   function move(e: React.PointerEvent<HTMLCanvasElement>) {
@@ -82,17 +102,38 @@ export default function SignaturePad({ onChange, disabled, height = 180 }: Props
     const from = last.current;
     if (!ctx || !from) return;
 
-    const to = pointFrom(e);
-    // Curve through the midpoint so quick strokes stay smooth.
-    const mid = { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 };
+    // A pointer can batch several positions into one event. Drawing only the
+    // latest skips the ones between, which is what breaks a fast stroke into
+    // separate dashes.
+    const points = typeof e.nativeEvent.getCoalescedEvents === 'function'
+      ? e.nativeEvent.getCoalescedEvents().map((c) => pointFor(c))
+      : [pointFrom(e)];
+    if (points.length === 0) points.push(pointFrom(e));
 
     ctx.beginPath();
     ctx.moveTo(from.x, from.y);
-    ctx.quadraticCurveTo(from.x, from.y, mid.x, mid.y);
+
+    // Curve through each midpoint, using the previous point as the control.
+    // The line must END at the point we then remember, or the next segment
+    // starts somewhere the ink never reached and leaves a gap.
+    let prev = from;
+    for (const p of points) {
+      const mid = { x: (prev.x + p.x) / 2, y: (prev.y + p.y) / 2 };
+      ctx.quadraticCurveTo(prev.x, prev.y, mid.x, mid.y);
+      prev = p;
+    }
+    ctx.lineTo(prev.x, prev.y);
     ctx.stroke();
 
-    last.current = to;
+    last.current = prev;
+    inked.current = true;
     if (!hasInk) setHasInk(true);
+  }
+
+  /** Canvas-relative point for a raw pointer event from getCoalescedEvents. */
+  function pointFor(e: PointerEvent): { x: number; y: number } {
+    const rect = canvasRef.current!.getBoundingClientRect();
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
   }
 
   function end() {
@@ -105,7 +146,9 @@ export default function SignaturePad({ onChange, disabled, height = 180 }: Props
   function emit() {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    onChange(hasInk || isBlank(canvas) === false ? canvas.toDataURL('image/png') : null);
+    // isBlank is the authority — hasInk may not have re-rendered yet, and a
+    // canvas scanned as empty must never be sent as a signature.
+    onChange(isBlank(canvas) ? null : canvas.toDataURL('image/png'));
   }
 
   function clear() {
@@ -113,6 +156,7 @@ export default function SignaturePad({ onChange, disabled, height = 180 }: Props
     const ctx = canvas?.getContext('2d');
     if (!canvas || !ctx) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    inked.current = false;
     setHasInk(false);
     onChange(null);
   }
