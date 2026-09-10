@@ -233,49 +233,77 @@ export default function ReviewApplicationPage({ params }: { params: { id: string
             <section className="card p-6">
               <h2 className="text-base font-semibold text-slate-900">Photos</h2>
               <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                {photos.map((p) => (
-                  <div key={p.id}>
-                    <p className="text-sm font-medium text-slate-800">{p.doc_key}</p>
-                    <p className="text-xs text-slate-500">
-                      {p.capture_source === 'camera' ? 'Taken with camera' : 'Uploaded file'}
-                      {p.captured_at ? ` · ${new Date(p.captured_at).toLocaleString()}` : ''}
-                    </p>
-                    {p.latitude && p.longitude && (
+                {photos.map((p) => {
+                  const label =
+                    form.schema.photos?.find((x) => x.key === p.doc_key)?.label ?? p.doc_key;
+                  return (
+                    <figure key={p.id}>
                       <a
-                        href={`https://www.google.com/maps?q=${p.latitude},${p.longitude}`}
+                        href={`/api/documents/${p.id}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-xs text-brand-600 hover:text-brand-700"
+                        className="block overflow-hidden rounded-md border border-slate-200 bg-slate-50"
                       >
-                        View location on map
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={`/api/documents/${p.id}`}
+                          alt={label}
+                          className="h-48 w-full object-cover transition-opacity hover:opacity-90"
+                          loading="lazy"
+                        />
                       </a>
-                    )}
-                  </div>
-                ))}
+                      <figcaption className="mt-2">
+                        <p className="text-sm font-medium text-slate-800">{label}</p>
+                        <p className="text-xs text-slate-500">
+                          {p.capture_source === 'camera' ? '📷 Taken with camera' : 'Uploaded file'}
+                          {p.captured_at ? ` · ${new Date(p.captured_at).toLocaleString()}` : ''}
+                        </p>
+                        {p.latitude && p.longitude && (
+                          <a
+                            href={`https://www.google.com/maps?q=${p.latitude},${p.longitude}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-brand-600 hover:text-brand-700"
+                          >
+                            View location on map ↗
+                          </a>
+                        )}
+                      </figcaption>
+                    </figure>
+                  );
+                })}
               </div>
-              <p className="mt-3 text-xs text-slate-400">
-                Image previews require file storage to be configured.
-              </p>
             </section>
           )}
 
           <section className="card p-6">
             <h2 className="text-base font-semibold text-slate-900">Documents</h2>
-            {documents.length === 0 ? (
+            {files.length === 0 ? (
               <p className="mt-3 text-sm text-slate-500">No documents were uploaded.</p>
             ) : (
               <ul className="mt-3 divide-y divide-slate-100">
-                {documents.map((d) => (
-                  <li key={d.id} className="flex items-center justify-between py-2 text-sm">
-                    <div>
-                      <p className="font-medium text-slate-800">{d.doc_key}</p>
-                      <p className="text-xs text-slate-500">
-                        {d.file_name} · {(Number(d.size_bytes) / 1024 / 1024).toFixed(2)} MB
-                      </p>
-                    </div>
-                    <span className="badge bg-slate-100 text-slate-600">{d.status}</span>
-                  </li>
-                ))}
+                {files.map((d) => {
+                  const label =
+                    form.schema.documents?.find((x) => x.key === d.doc_key)?.label ?? d.doc_key;
+                  return (
+                    <li key={d.id} className="flex items-center justify-between gap-3 py-2 text-sm">
+                      <div className="min-w-0">
+                        <a
+                          href={`/api/documents/${d.id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-medium text-brand-600 hover:text-brand-700"
+                        >
+                          {label} ↗
+                        </a>
+                        <p className="truncate text-xs text-slate-500">
+                          {d.file_name} · {(Number(d.size_bytes) / 1024 / 1024).toFixed(2)} MB
+                        </p>
+                      </div>
+                      <span className="badge bg-slate-100 text-slate-600">{d.status}</span>
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </section>

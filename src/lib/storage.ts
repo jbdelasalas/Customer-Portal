@@ -84,6 +84,66 @@ function extensionFor(name: string, mime: string): string {
   return map[mime] ?? '';
 }
 
+/**
+ * A short-lived URL for reading a stored file.
+ *
+ * The bucket is private, so nothing is served by a guessable path — the caller
+ * must already have passed the permission check, and the link it gets back
+ * expires. Returns null for the local driver, where the file is served through
+ * our own route instead.
+ */
+export async function signedUrlFor(
+  storagePath: string,
+  expiresInSeconds = 300,
+): Promise<string | null> {
+  const driver = process.env.UPLOAD_DRIVER ?? 'local';
+  if (driver !== 'supabase') return null;
+
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) throw new Error('Supabase storage is not configured.');
+
+  // storage_path is stored as "<bucket>/<object>"; the API wants them apart.
+  const slash = storagePath.indexOf('/');
+  const bucket = storagePath.slice(0, slash);
+  const object = storagePath.slice(slash + 1);
+
+  const res = await fetch(`${url}/storage/v1/object/sign/${bucket}/${object}`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ expiresIn: expiresInSeconds }),
+  });
+
+  if (!res.ok) return null;
+  const body = (await res.json()) as { signedURL?: string };
+  return body.signedURL ? `${url}/storage/v1${body.signedURL}` : null;
+}
+
+/** Reads a stored file back as bytes. Used by the local-driver read path. */
+export async function readFile(storagePath: string): Promise<Buffer | null> {
+  const driver = process.env.UPLOAD_DRIVER ?? 'local';
+
+  if (driver === 'supabase') {
+    const url = process.env.SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!url || !key) throw new Error('Supabase storage is not configured.');
+
+    const res = await fetch(`${url}/storage/v1/object/${storagePath}`, {
+      headers: { Authorization: `Bearer ${key}` },
+    });
+    if (!res.ok) return null;
+    return Buffer.from(await res.arrayBuffer());
+  }
+
+  try {
+    const { readFile: read } = await import('node:fs/promises');
+    // storage_path already includes the "uploads/" prefix.
+    return await read(join(process.cwd(), storagePath));
+  } catch {
+    return null;
+  }
+}
+
 /** True when `mime` satisfies one of the schema's accept patterns. */
 export function mimeAllowed(mime: string, accept?: string[]): boolean {
   if (!accept?.length) return true;
