@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 /**
  * Full-bleed looping video behind the page content.
@@ -30,26 +30,23 @@ export default function VideoBackground({
   overlayOpacity = 0.55,
   children,
 }: Props) {
-  const videoRef = useRef<HTMLVideoElement>(null);
   const [canPlay, setCanPlay] = useState(false);
   const [failed, setFailed] = useState(false);
+  // Decided before the element mounts, so a reduced-motion visitor never gets
+  // a <video> at all rather than one we stop afterwards.
+  const [allowMotion, setAllowMotion] = useState(true);
 
   useEffect(() => {
-    const el = videoRef.current;
-    if (!el) return;
-
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (reduced) {
-      setFailed(true); // Poster only — a deliberate choice, not an error.
-      return;
-    }
-
-    // Some browsers reject autoplay even when muted; fall back rather than
-    // leaving a stalled first frame.
-    el.play().catch(() => setFailed(true));
+    setAllowMotion(!window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   }, []);
 
-  const showVideo = !failed;
+  // No manual play() call here on purpose. The element carries `autoPlay`, and
+  // calling play() alongside it races the browser's own attempt — the second
+  // request aborts the first and logs "The play() request was interrupted by a
+  // new load request". Autoplay policy is satisfied by muted + playsInline, and
+  // onError below still catches a genuine failure.
+
+  const showVideo = !failed && allowMotion;
 
   return (
     <div className="relative isolate min-h-screen w-full overflow-hidden">
@@ -72,7 +69,6 @@ export default function VideoBackground({
 
       {showVideo && (
         <video
-          ref={videoRef}
           className={`absolute inset-0 -z-10 h-full w-full object-cover transition-opacity duration-700 ${
             canPlay ? 'opacity-100' : 'opacity-0'
           }`}
@@ -82,9 +78,12 @@ export default function VideoBackground({
           muted
           loop
           playsInline
-          preload="metadata"
+          // The file is 1.6 MB and loops every 9 seconds, so metadata-only
+          // preloading just means it stalls and re-buffers on each pass.
+          preload="auto"
           aria-hidden="true"
-          onCanPlay={() => setCanPlay(true)}
+          disablePictureInPicture
+          onCanPlayThrough={() => setCanPlay(true)}
           onError={() => setFailed(true)}
         />
       )}
