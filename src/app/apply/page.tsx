@@ -28,6 +28,8 @@ export default function ApplyPage() {
   const [data, setData] = useState<FormData>({});
   const [errors, setErrors] = useState<ValidationError[]>([]);
   const [uploadedKeys, setUploadedKeys] = useState<string[]>([]);
+  // docKey -> document id, so an already-captured photo renders as an image.
+  const [uploadedIds, setUploadedIds] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [fatal, setFatal] = useState<string | null>(null);
   const [save, setSave] = useState<Save>('idle');
@@ -78,7 +80,9 @@ export default function ApplyPage() {
             setStatus(app.application.status);
             setData(app.application.data ?? {});
             latestData.current = app.application.data ?? {};
-            setUploadedKeys((app.documents ?? []).map((d: { doc_key: string }) => d.doc_key));
+            const docs: { id: string; doc_key: string }[] = app.documents ?? [];
+            setUploadedKeys(docs.map((d) => d.doc_key));
+            setUploadedIds(Object.fromEntries(docs.map((d) => [d.doc_key, d.id])));
 
             // Show the declaration as already signed when resuming a draft,
             // rather than presenting an empty pad over a signature we hold.
@@ -167,7 +171,9 @@ export default function ApplyPage() {
       const b = await res.json().catch(() => ({}));
       throw new Error(b.error ?? 'Upload failed.');
     }
+    const saved = await res.json().catch(() => null);
     setUploadedKeys((k) => (k.includes(key) ? k : [...k, key]));
+    if (saved?.id) setUploadedIds((m) => ({ ...m, [key]: saved.id }));
   }
 
   async function saveSignature() {
@@ -309,7 +315,11 @@ export default function ApplyPage() {
                 facing={photo.facing ?? 'environment'}
                 disabled={readOnly}
                 existing={
-                  uploadedKeys.includes(photo.key) ? { fileName: 'Photo on file' } : null
+                  uploadedIds[photo.key]
+                    ? { url: `/api/documents/${uploadedIds[photo.key]}` }
+                    : uploadedKeys.includes(photo.key)
+                      ? { url: null }
+                      : null
                 }
                 onCapture={(file, meta) => uploadPhoto(photo.key, file, meta)}
               />

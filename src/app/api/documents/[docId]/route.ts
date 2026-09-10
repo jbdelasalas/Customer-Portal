@@ -45,9 +45,22 @@ export const GET = handler(
 
     // With object storage, hand back a short-lived signed URL and let the
     // browser fetch it directly — no need to stream megabytes through here.
+    //
+    // 302, not 307. A 307 preserves the original request unchanged, so the
+    // browser replays our cookies and headers at Supabase, which rejects the
+    // unexpected credentials — and the image silently fails to load in an
+    // <img> tag. The signed URL carries its own authorisation in the query
+    // string and needs nothing else.
     const signed = await signedUrlFor(doc.storage_path, 300);
     if (signed) {
-      return Response.redirect(signed, 307);
+      return new Response(null, {
+        status: 302,
+        headers: {
+          Location: signed,
+          // The signed link expires; never let a cache outlive it.
+          'Cache-Control': 'private, no-store',
+        },
+      });
     }
 
     // Local driver: read and stream it ourselves.

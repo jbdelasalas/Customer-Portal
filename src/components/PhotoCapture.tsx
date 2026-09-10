@@ -19,7 +19,8 @@ interface Props {
   /** 'user' = selfie, 'environment' = rear camera for the premises. */
   facing?: Facing;
   disabled?: boolean;
-  existing?: { fileName: string } | null;
+  /** A photo already on file. `url` renders it; null means "saved, no preview". */
+  existing?: { url: string | null } | null;
   onCapture: (file: File, meta: CaptureMeta) => Promise<void> | void;
 }
 
@@ -192,9 +193,18 @@ export default function PhotoCapture({
       )}
 
       {!live && !preview && existing && (
-        <p className="mt-3 rounded-md bg-slate-50 px-3 py-2 text-xs text-slate-600">
-          {existing.fileName}
-        </p>
+        existing.url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={existing.url}
+            alt={label}
+            className="mt-3 max-h-72 w-full rounded-md object-contain"
+          />
+        ) : (
+          <p className="mt-3 rounded-md bg-slate-50 px-3 py-2 text-xs text-slate-600">
+            Photo on file.
+          </p>
+        )
       )}
 
       <div className="mt-3 flex flex-wrap gap-2">
