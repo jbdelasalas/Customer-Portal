@@ -12,7 +12,8 @@
     "db:seed": "node scripts/seed.mjs",
     "gen:secrets": "node scripts/gen-secrets.mjs",
     "db:test": "node scripts/test-connection.mjs",
-    "logo": "node scripts/install-logo.mjs"
+    "logo": "node scripts/install-logo.mjs",
+    "mail:test": "node scripts/test-email.mjs"
   },
   "engines": {
     "node": ">=20.0.0"
