@@ -28,6 +28,7 @@ interface UserRow {
   user_type: 'customer' | 'staff';
   customer_id: string | null;
   is_active: boolean;
+  must_change_password: boolean;
   is_superadmin: boolean;
   failed_logins: number;
   locked_until: string | null;
@@ -41,7 +42,8 @@ export const POST = handler(async (request: NextRequest) => {
 
   const user = await queryOne<UserRow>(
     `SELECT id, email, password_hash, full_name, user_type, customer_id,
-            is_active, is_superadmin, failed_logins, locked_until
+            is_active, is_superadmin, failed_logins, locked_until,
+            must_change_password
        FROM users WHERE email = $1`,
     [email],
   );
@@ -122,6 +124,9 @@ export const POST = handler(async (request: NextRequest) => {
       customerId: user.customer_id,
       isSuperadmin: user.is_superadmin,
       permissions,
+      // Set by an admin-issued reset. The client sends them straight to the
+      // change-password screen rather than into the portal.
+      mustChangePassword: user.must_change_password,
     },
   });
 });

@@ -30,9 +30,17 @@ export default function LoginPage() {
         return;
       }
 
+      const user = body.user;
+
+      // A temporary password issued by staff: they choose their own before
+      // going anywhere else.
+      if (user.mustChangePassword) {
+        router.push('/change-password?required=1');
+        return;
+      }
+
       // Staff go to the review queue; customers go to the portal, or to their
       // application if they have not been approved yet.
-      const user = body.user;
       if (user.userType === 'staff') router.push('/staff/applications');
       else if (user.customerId) router.push('/portal');
       else router.push('/apply');

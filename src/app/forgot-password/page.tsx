@@ -46,14 +46,20 @@ export default function ForgotPasswordPage() {
 
       {sent ? (
         <div className="card p-6 text-center">
-          <h1 className="text-xl font-bold text-slate-900">Check your email</h1>
+          <h1 className="text-xl font-bold text-slate-900">Request received</h1>
           <p className="mt-3 text-sm text-slate-600">
-            If <span className="font-medium">{email}</span> has an account, we&rsquo;ve sent a
-            link to reset the password. It&rsquo;s valid for one hour.
+            If <span className="font-medium">{email}</span> has an account, a reset link is on
+            its way.
           </p>
-          <p className="mt-3 text-xs text-slate-500">
-            Nothing arriving? Check your spam folder, or try again in a few minutes.
-          </p>
+          {/* Email delivery is not live yet, so pointing only at the inbox
+              would leave people waiting for something that never arrives. */}
+          <div className="mt-4 rounded-md bg-slate-50 px-4 py-3 text-left text-sm text-slate-700">
+            <p className="font-medium">Need it sooner?</p>
+            <p className="mt-1 text-xs leading-relaxed text-slate-600">
+              Call us and our team can issue you a temporary password over the phone. Have your
+              customer code or business name ready so we can confirm who you are.
+            </p>
+          </div>
 
           {devToken && (
             <div className="mt-4 rounded-md bg-amber-50 p-3 text-left">

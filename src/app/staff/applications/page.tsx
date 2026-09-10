@@ -70,7 +70,11 @@ export default function ReviewQueuePage() {
 
   return (
     <>
-      <SiteHeader href="/staff/applications" />
+      <SiteHeader href="/staff/applications">
+        <Link href="/staff/users" className="text-sm text-slate-600 hover:text-slate-900">
+          Accounts
+        </Link>
+      </SiteHeader>
 
     <main className="mx-auto max-w-6xl px-6 py-10">
       <div className="flex flex-wrap items-end justify-between gap-4">
