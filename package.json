@@ -9,7 +9,8 @@
     "start": "next start",
     "lint": "next lint",
     "db:migrate": "node scripts/migrate.mjs",
-    "db:seed": "node scripts/seed.mjs"
+    "db:seed": "node scripts/seed.mjs",
+    "gen:secrets": "node scripts/gen-secrets.mjs"
   },
   "engines": {
     "node": ">=20.0.0"
