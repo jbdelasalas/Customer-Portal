@@ -9,6 +9,12 @@ database, its own deploy. It shares no tables with the ERP. Every table that
 will eventually need to line up with an ERP record carries a nullable `erp_ref`
 column; nothing reads or writes the ERP today.
 
+## Manuals
+
+- **[Staff Manual](docs/STAFF-MANUAL.md)** — reviewing and approving applications
+- **[Customer Guide](docs/CUSTOMER-GUIDE.md)** — for applicants; safe to send out as-is
+- **[Technical Manual](docs/ADMIN-MANUAL.md)** — running, changing and troubleshooting the system
+
 ## Stack
 
 Next.js 14 (App Router) · TypeScript · PostgreSQL via `pg` · Tailwind ·
