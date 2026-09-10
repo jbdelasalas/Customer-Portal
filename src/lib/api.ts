@@ -13,7 +13,32 @@ export function noContent(): Response {
 }
 
 /**
- * Wraps a route handler so a thrown Response (how requireAuth/requirePermission
+ * Misconfiguration reads as a server fault otherwise, which sends whoever is
+ * setting this up hunting through application code for what is really a
+ * missing line in .env.local.
+ */
+function configProblem(e: unknown): string | null {
+  if (!(e instanceof Error)) return null;
+
+  if (/No database URL configured/i.test(e.message)) {
+    return 'The database is not configured. Set POSTGRES_URL (or DATABASE_URL) in .env.local.';
+  }
+  if (/JWT_ACCESS_SECRET is required/i.test(e.message)) {
+    return 'Authentication is not configured. Set JWT_ACCESS_SECRET in the environment.';
+  }
+  // The pool is configured but nothing is listening / DNS is wrong.
+  if (/ECONNREFUSED|ENOTFOUND|EAI_AGAIN|getaddrinfo/i.test(e.message)) {
+    return 'Could not reach the database. Check POSTGRES_URL and that the database is running.';
+  }
+  // Migrations have not been run against an otherwise reachable database.
+  if (/relation ".+" does not exist/i.test(e.message)) {
+    return 'The database schema is missing. Run `npm run db:migrate`.';
+  }
+  return null;
+}
+
+/**
+ * Wraps a route handler so a thrown Response (how requireAuth/requireStaff
  * bail out) becomes the response, and anything else becomes a clean 500
  * instead of leaking a stack trace to the client.
  */
@@ -26,6 +51,11 @@ export function handler<A extends unknown[]>(
     } catch (e) {
       if (e instanceof Response) return e;
       console.error('[api]', e);
+
+      // Safe to surface in any environment: it names a setting, not internals.
+      const config = configProblem(e);
+      if (config) return err(config, 503);
+
       const message = e instanceof Error ? e.message : 'Internal server error';
       return err(
         process.env.NODE_ENV === 'production' ? 'Internal server error' : message,
