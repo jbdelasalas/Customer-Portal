@@ -20,6 +20,7 @@ interface ApplicationRow {
   decision_notes: string | null;
   customer_id: string | null;
   created_at: string;
+  reopen_count: number;
   schema: FormSchema;
   version: number;
   company_name: string;
@@ -35,7 +36,7 @@ async function loadForActor(id: string, auth: AuthContext): Promise<ApplicationR
     `SELECT a.id, a.reference_no, a.status, a.data, a.business_name,
             a.applicant_user_id, a.applicant_email, a.submitted_at,
             a.decided_at, a.decision_notes, a.customer_id, a.created_at,
-            fv.schema, fv.version, co.name AS company_name
+            a.reopen_count, fv.schema, fv.version, co.name AS company_name
        FROM applications a
        JOIN form_versions fv ON fv.id = a.form_version_id
        JOIN companies co     ON co.id = a.company_id
@@ -89,6 +90,7 @@ export const GET = handler(
         customerId: app.customer_id,
         createdAt: app.created_at,
         companyName: app.company_name,
+        reopenCount: app.reopen_count,
       },
       form: { schema: app.schema, version: app.version },
       documents,

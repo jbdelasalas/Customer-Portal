@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 interface ApplicationView {
   application: {
@@ -38,12 +39,18 @@ const STATUS_COPY: Record<string, string> = {
   under_review: 'Someone from our team is reviewing your application now.',
   info_requested: 'We need a little more information before we can proceed.',
   approved: 'Your account is open. You can start placing orders.',
-  rejected: 'We were unable to approve this application.',
+  rejected:
+    'We were unable to approve this application. You can update your answers and submit it again — everything you entered and uploaded is still saved.',
 };
 
 export default function ApplicationStatusPage({ params }: { params: { id: string } }) {
+  const router = useRouter();
   const [view, setView] = useState<ApplicationView | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [reopening, setReopening] = useState(false);
+  // Kept apart from `error`, which replaces the whole page: a failed reopen
+  // should leave the application on screen.
+  const [reopenError, setReopenError] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -61,6 +68,27 @@ export default function ApplicationStatusPage({ params }: { params: { id: string
 
   const { application, events } = view;
   const editable = ['draft', 'info_requested'].includes(application.status);
+
+  /** Move a rejected application back to draft, then continue editing it. */
+  async function reopen() {
+    setReopening(true);
+    setReopenError(null);
+    try {
+      const res = await fetch(`/api/applications/${application.id}/reopen`, {
+        method: 'POST',
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        setReopenError(body.error ?? 'Could not reopen this application.');
+        return;
+      }
+      router.push('/apply');
+    } catch {
+      setReopenError('Could not reopen this application. Please try again.');
+    } finally {
+      setReopening(false);
+    }
+  }
 
   return (
     <main className="mx-auto max-w-3xl px-6 py-10">
@@ -91,11 +119,18 @@ export default function ApplicationStatusPage({ params }: { params: { id: string
         </div>
       )}
 
+      {reopenError && <p className="mt-4 text-sm text-red-600">{reopenError}</p>}
+
       <div className="mt-6 flex gap-3">
         {editable && (
           <Link href="/apply" className="btn-primary">
             Continue editing
           </Link>
+        )}
+        {application.status === 'rejected' && (
+          <button type="button" className="btn-primary" onClick={reopen} disabled={reopening}>
+            {reopening ? 'Reopening…' : 'Edit and resubmit'}
+          </button>
         )}
         {application.status === 'approved' && (
           <Link href="/portal" className="btn-primary">

@@ -18,6 +18,7 @@ interface Detail {
     decisionNotes: string | null;
     customerId: string | null;
     companyName: string;
+    reopenCount: number;
   };
   form: { schema: FormSchema; version: number };
   documents: {
@@ -153,9 +154,18 @@ export default function ReviewApplicationPage({ params }: { params: { id: string
             {application.applicantEmail} · {application.companyName}
           </p>
         </div>
-        <span className="badge bg-slate-100 text-slate-700">
-          {application.status.replace(/_/g, ' ')}
-        </span>
+        <div className="flex flex-wrap items-center gap-2">
+          {/* A previously rejected application that has come back around: the
+              reviewer should know before reading the answers. */}
+          {application.reopenCount > 0 && (
+            <span className="badge bg-purple-100 text-purple-700">
+              Resubmission · attempt {application.reopenCount + 1}
+            </span>
+          )}
+          <span className="badge bg-slate-100 text-slate-700">
+            {application.status.replace(/_/g, ' ')}
+          </span>
+        </div>
       </header>
 
       {error && <p className="mt-4 rounded-md bg-red-50 p-3 text-sm text-red-700">{error}</p>}
