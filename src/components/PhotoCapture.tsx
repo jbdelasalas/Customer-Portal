@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { compressImage } from '@/lib/compress-image';
 
 /**
  * Live camera capture with an upload fallback.
@@ -143,10 +144,13 @@ export default function PhotoCapture({
     }
   }
 
-  async function chooseFile(file: File) {
+  async function chooseFile(chosen: File) {
     setBusy(true);
     setError(null);
     try {
+      // Camera captures are already small (1280x960 q85); a photo picked from
+      // the gallery is not, so it gets the same treatment before upload.
+      const { file } = await compressImage(chosen);
       setPreview(URL.createObjectURL(file));
       await onCapture(file, { source: 'upload', capturedAt: new Date().toISOString() });
     } catch {

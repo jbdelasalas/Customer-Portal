@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { FormDocument } from '@/lib/forms';
+import { compressImage, formatBytes } from '@/lib/compress-image';
 
 interface Props {
   applicationId: string;
@@ -24,12 +25,25 @@ export default function DocumentUpload({
 }: Props) {
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [notes, setNotes] = useState<Record<string, string>>({});
 
-  async function upload(doc: FormDocument, file: File) {
+  async function upload(doc: FormDocument, chosen: File) {
     setBusyKey(doc.key);
     setErrors((e) => ({ ...e, [doc.key]: '' }));
+    setNotes((n) => ({ ...n, [doc.key]: '' }));
 
     try {
+      // Shrink oversized photos before they cross the applicant's mobile data.
+      // This runs ahead of the request, so a file over the slot's limit can
+      // come back under it instead of being rejected.
+      const { file, compressed, originalSize } = await compressImage(chosen);
+      if (compressed) {
+        setNotes((n) => ({
+          ...n,
+          [doc.key]: `optimised ${formatBytes(originalSize)} → ${formatBytes(file.size)}`,
+        }));
+      }
+
       const body = new FormData();
       body.append('file', file);
       body.append('docKey', doc.key);
@@ -67,6 +81,7 @@ export default function DocumentUpload({
         {documents.map((doc) => {
           const done = uploadedKeys.includes(doc.key);
           const error = errors[doc.key];
+          const note = notes[doc.key];
           const busy = busyKey === doc.key;
 
           return (
@@ -80,7 +95,13 @@ export default function DocumentUpload({
                   <p className="text-xs text-red-600">{error}</p>
                 ) : (
                   <p className="text-xs text-slate-500">
-                    {done ? 'Uploaded' : `Max ${doc.maxSizeMb ?? 10} MB`}
+                    {busy
+                      ? 'Preparing…'
+                      : done
+                        ? note
+                          ? `Uploaded · ${note}`
+                          : 'Uploaded'
+                        : `Max ${doc.maxSizeMb ?? 10} MB`}
                   </p>
                 )}
               </div>
