@@ -24,6 +24,10 @@ interface ApplicationRow {
   schema: FormSchema;
   version: number;
   company_name: string;
+  company_legal_name: string | null;
+  company_address: string | null;
+  company_signatory: string | null;
+  company_print_header: string | null;
 }
 
 /**
@@ -36,7 +40,11 @@ async function loadForActor(id: string, auth: AuthContext): Promise<ApplicationR
     `SELECT a.id, a.reference_no, a.status, a.data, a.business_name,
             a.applicant_user_id, a.applicant_email, a.submitted_at,
             a.decided_at, a.decision_notes, a.customer_id, a.created_at,
-            a.reopen_count, fv.schema, fv.version, co.name AS company_name
+            a.reopen_count, fv.schema, fv.version, co.name AS company_name,
+            co.legal_name   AS company_legal_name,
+            co.address      AS company_address,
+            co.signatory    AS company_signatory,
+            co.print_header AS company_print_header
        FROM applications a
        JOIN form_versions fv ON fv.id = a.form_version_id
        JOIN companies co     ON co.id = a.company_id
@@ -90,6 +98,15 @@ export const GET = handler(
         customerId: app.customer_id,
         createdAt: app.created_at,
         companyName: app.company_name,
+        // Letterhead for the printed CIS. Per company, because the print page
+        // used to hardcode one company name, address and signatory.
+        company: {
+          name: app.company_name,
+          legalName: app.company_legal_name,
+          address: app.company_address,
+          signatory: app.company_signatory,
+          printHeader: app.company_print_header,
+        },
         reopenCount: app.reopen_count,
       },
       form: { schema: app.schema, version: app.version },

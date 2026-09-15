@@ -1,7 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import FormRenderer from '@/components/FormRenderer';
 import SiteHeader from '@/components/SiteHeader';
 import DocumentUpload from '@/components/DocumentUpload';
@@ -13,14 +13,17 @@ interface LoadedForm {
   formVersionId: string;
   name: string;
   description: string | null;
-  company: { id: string; name: string };
+  company: { id: string; code: string; name: string; shortName: string };
   schema: FormSchema;
 }
 
 type Save = 'idle' | 'saving' | 'saved' | 'error';
 
-export default function ApplyPage() {
+function ApplyForm() {
   const router = useRouter();
+  // Which company this applicant is applying to. Absent = the default company,
+  // resolved server-side; never guessed from form version numbers.
+  const companyCode = useSearchParams().get('company');
 
   const [form, setForm] = useState<LoadedForm | null>(null);
   const [applicationId, setApplicationId] = useState<string | null>(null);
@@ -62,7 +65,9 @@ export default function ApplyPage() {
           return;
         }
 
-        const formRes = await fetch('/api/public/form');
+        const formRes = await fetch(
+          companyCode ? `/api/public/form?company=${encodeURIComponent(companyCode)}` : '/api/public/form',
+        );
         if (!formRes.ok) {
           setFatal('No application form is published yet. Please contact us.');
           return;
@@ -116,7 +121,7 @@ export default function ApplyPage() {
         setLoading(false);
       }
     })();
-  }, [router]);
+  }, [router, companyCode]);
 
   // --- autosave -------------------------------------------------------------
   const persist = useCallback(
@@ -409,5 +414,17 @@ export default function ApplyPage() {
       )}
       </main>
     </>
+  );
+}
+
+/**
+ * useSearchParams() reads ?company=, which opts this page out of
+ * prerendering; Next requires the reader to sit under a Suspense boundary.
+ */
+export default function ApplyPage() {
+  return (
+    <Suspense fallback={<main className="p-10 text-center text-slate-500">Loading…</main>}>
+      <ApplyForm />
+    </Suspense>
   );
 }

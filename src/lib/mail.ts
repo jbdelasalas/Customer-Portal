@@ -74,6 +74,12 @@ export async function send(mail: Mail): Promise<SendResult> {
 
 // --- templates --------------------------------------------------------------
 
+/**
+ * Default brand for transactional mail. The portal serves more than one
+ * company, so every template takes an optional `brand` — pass the applicant's
+ * own company name (companies.short_name) so a fuel applicant is not emailed
+ * under the poultry company's name. Falls back to the deployment-wide value.
+ */
 const BRAND = process.env.NEXT_PUBLIC_APP_NAME ?? 'Art Fresh';
 
 function appUrl(): string {
@@ -87,11 +93,16 @@ function appUrl(): string {
  * Wraps content in a plain, table-free layout. Deliberately simple: heavy
  * HTML is what trips spam filters, and transactional mail needs to arrive.
  */
-function layout(heading: string, body: string, cta?: { label: string; url: string }): string {
+function layout(
+  heading: string,
+  body: string,
+  cta?: { label: string; url: string },
+  brand: string = BRAND,
+): string {
   return `<!doctype html>
 <html><body style="margin:0;padding:24px;background:#f8fafc;font-family:system-ui,-apple-system,'Segoe UI',sans-serif;color:#0f172a">
   <div style="max-width:520px;margin:0 auto;background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:32px">
-    <p style="margin:0 0 24px;font-size:18px;font-weight:700;color:#d40d0d">${BRAND}</p>
+    <p style="margin:0 0 24px;font-size:18px;font-weight:700;color:#d40d0d">${brand}</p>
     <h1 style="margin:0 0 16px;font-size:20px;font-weight:600">${heading}</h1>
     <div style="font-size:14px;line-height:1.6;color:#334155">${body}</div>
     ${
@@ -106,25 +117,31 @@ function layout(heading: string, body: string, cta?: { label: string; url: strin
     }
     <hr style="margin:28px 0 0;border:0;border-top:1px solid #e2e8f0">
     <p style="margin:16px 0 0;font-size:12px;color:#94a3b8">
-      This message was sent by ${BRAND}. If you weren't expecting it, you can ignore it.
+      This message was sent by ${brand}. If you weren't expecting it, you can ignore it.
     </p>
   </div>
 </body></html>`;
 }
 
-export function passwordResetMail(to: string, token: string, name?: string): Mail {
+export function passwordResetMail(
+  to: string,
+  token: string,
+  name?: string,
+  brand: string = BRAND,
+): Mail {
   const url = `${appUrl()}/reset-password?token=${encodeURIComponent(token)}`;
   const greeting = name ? `Hello ${name},` : 'Hello,';
 
   return {
     to,
-    subject: `Reset your ${BRAND} password`,
+    subject: `Reset your ${brand} password`,
     html: layout(
       'Reset your password',
       `<p>${greeting}</p>
        <p>We received a request to reset the password for this account. The link below is valid for one hour and can only be used once.</p>
        <p>If you didn't ask for this, no action is needed — your password stays as it is.</p>`,
       { label: 'Choose a new password', url },
+      brand,
     ),
     text: `${greeting}
 
@@ -135,22 +152,28 @@ ${url}
 
 If you didn't ask for this, no action is needed — your password stays as it is.
 
-— ${BRAND}`,
+— ${brand}`,
   };
 }
 
-export function verifyEmailMail(to: string, token: string, name?: string): Mail {
+export function verifyEmailMail(
+  to: string,
+  token: string,
+  name?: string,
+  brand: string = BRAND,
+): Mail {
   const url = `${appUrl()}/verify-email?token=${encodeURIComponent(token)}`;
   const greeting = name ? `Hello ${name},` : 'Hello,';
 
   return {
     to,
-    subject: `Confirm your email for ${BRAND}`,
+    subject: `Confirm your email for ${brand}`,
     html: layout(
       'Confirm your email address',
       `<p>${greeting}</p>
        <p>Please confirm this address so we can reach you about your trade account application. The link is valid for three days.</p>`,
       { label: 'Confirm my email', url },
+      brand,
     ),
     text: `${greeting}
 
@@ -160,24 +183,30 @@ ${url}
 
 The link is valid for three days.
 
-— ${BRAND}`,
+— ${brand}`,
   };
 }
 
 /** Sent when staff approve an application. */
-export function applicationApprovedMail(to: string, customerCode: string, name?: string): Mail {
+export function applicationApprovedMail(
+  to: string,
+  customerCode: string,
+  name?: string,
+  brand: string = BRAND,
+): Mail {
   const url = `${appUrl()}/portal`;
   const greeting = name ? `Hello ${name},` : 'Hello,';
 
   return {
     to,
-    subject: `Your ${BRAND} trade account is approved`,
+    subject: `Your ${brand} trade account is approved`,
     html: layout(
       'Your account is open',
       `<p>${greeting}</p>
        <p>Your trade account application has been approved. Your customer code is <strong>${customerCode}</strong>.</p>
        <p>You can now sign in to place orders at your contracted prices and track every delivery.</p>`,
       { label: 'Go to the portal', url },
+      brand,
     ),
     text: `${greeting}
 
@@ -187,22 +216,28 @@ Your customer code is ${customerCode}.
 Sign in to place orders and track deliveries:
 ${url}
 
-— ${BRAND}`,
+— ${brand}`,
   };
 }
 
 /** Sent when staff need more information before deciding. */
-export function infoRequestedMail(to: string, message: string, applicationId: string): Mail {
+export function infoRequestedMail(
+  to: string,
+  message: string,
+  applicationId: string,
+  brand: string = BRAND,
+): Mail {
   const url = `${appUrl()}/apply/${applicationId}`;
 
   return {
     to,
-    subject: `More information needed for your ${BRAND} application`,
+    subject: `More information needed for your ${brand} application`,
     html: layout(
       'We need a little more information',
       `<p>Our team has reviewed your application and needs the following before we can proceed:</p>
        <blockquote style="margin:16px 0;padding:12px 16px;background:#f8fafc;border-left:3px solid #d40d0d">${message}</blockquote>`,
       { label: 'Update my application', url },
+      brand,
     ),
     text: `Our team has reviewed your application and needs the following before we can proceed:
 
@@ -211,6 +246,6 @@ ${message}
 Update your application here:
 ${url}
 
-— ${BRAND}`,
+— ${brand}`,
   };
 }

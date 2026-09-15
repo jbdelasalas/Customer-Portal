@@ -112,9 +112,17 @@ async function main() {
       [formId],
     );
 
+    // jsonb does not preserve object key order, so comparing raw
+    // JSON.stringify output reports a change on every run and publishes a
+    // pointless new version each time. Canonicalise key order first.
+    const canonical = (value) =>
+      JSON.stringify(value, (_key, v) =>
+        v && typeof v === 'object' && !Array.isArray(v)
+          ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, v[k]]))
+          : v,
+      );
     const unchanged =
-      current.rows.length &&
-      JSON.stringify(current.rows[0].schema) === JSON.stringify(schema);
+      current.rows.length && canonical(current.rows[0].schema) === canonical(schema);
 
     if (unchanged) {
       console.log(`  form     v${current.rows[0].version} (unchanged)`);

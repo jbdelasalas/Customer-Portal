@@ -31,6 +31,13 @@ interface Loaded {
     data: Record<string, unknown>;
     businessName: string | null;
     companyName: string;
+    company?: {
+      name: string;
+      legalName: string | null;
+      address: string | null;
+      signatory: string | null;
+      printHeader: string | null;
+    };
     status: string;
   };
   form: { schema: FormSchema };
@@ -62,6 +69,17 @@ export default function PrintCisPage({ params }: { params: { id: string } }) {
   if (!loaded) return <main className="p-10 text-center text-slate-500">Loading…</main>;
 
   const { application, form } = loaded;
+
+  // Letterhead comes from the application's own company. It was hardcoded to
+  // one company, which printed the wrong name, address and approving officer
+  // on every other company's notarised form — a defect on a legal document,
+  // not a cosmetic one. Falls back to the company name alone when the
+  // optional letterhead columns are unset.
+  const co = application.company;
+  const letterheadName = (co?.legalName ?? co?.name ?? application.companyName).toUpperCase();
+  const letterheadAddress = co?.address ?? null;
+  const printHeader = co?.printHeader ?? 'CUSTOMER INFORMATION SHEET';
+  const signatory = co?.signatory ?? null;
 
   // The 2x2 photo on the paper form is the selfie captured during signup.
   const selfieKey = (form.schema.photos ?? []).find((p) => p.facing === 'user')?.key ?? 'selfie';
@@ -124,15 +142,15 @@ export default function PrintCisPage({ params }: { params: { id: string } }) {
             />
             <div className="min-w-0 flex-1">
               <p className="text-sm font-bold tracking-wide">
-                ART FRESH CHICKEN CORP.
+                {letterheadName}
               </p>
-              <p className="mt-0.5 text-[9px] leading-tight">
-                Unit 803 Park Trade Centre, Investment Drive,
-                <br />
-                Madrigal Business Park, Ayala-Alabang, Muntinlupa City
-              </p>
+              {letterheadAddress && (
+                <p className="mt-0.5 whitespace-pre-line text-[9px] leading-tight">
+                  {letterheadAddress}
+                </p>
+              )}
               <h1 className="mt-2 text-lg font-bold tracking-wide">
-                CUSTOMER INFORMATION SHEET
+                {printHeader}
               </h1>
             </div>
             {/* The 2x2 photo box, as on the paper form. */}
@@ -228,9 +246,15 @@ export default function PrintCisPage({ params }: { params: { id: string } }) {
             </div>
           </div>
           <p className="mt-6 text-center text-[10px]">Noted by:</p>
-          <p className="mt-6 text-center text-[10px] font-semibold">
-            ART FRESH PRESIDENT / CFO
-          </p>
+          {signatory ? (
+            <p className="mt-6 text-center text-[10px] font-semibold">{signatory}</p>
+          ) : (
+            // No configured officer: print a blank rule to sign over rather
+            // than another company's title.
+            <p className="mx-auto mt-10 w-64 border-t border-black pt-1 text-center text-[9px]">
+              Approved By
+            </p>
+          )}
         </section>
 
         {/* Notarial acknowledgment, page 2 of the paper form */}
