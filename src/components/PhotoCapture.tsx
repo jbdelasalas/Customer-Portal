@@ -59,6 +59,11 @@ export default function PhotoCapture({
   // stays on and the device stays locked to this tab.
   useEffect(() => stop, [stop]);
 
+  // If this always lands in the NotAllowedError branch in production while
+  // working locally, check Permissions-Policy in vercel.json before anything
+  // else: `camera=()` is an *empty* allowlist that denies our own origin too,
+  // so getUserMedia rejects before the browser ever prompts. It needs
+  // `camera=(self)`. Same for `geolocation=()` and the coordinates below.
   async function openCamera() {
     setError(null);
     try {
